@@ -41,15 +41,6 @@ public abstract class AbstractSubmit extends AbstractBash implements RunnableTas
     private String master;
 
     @Schema(
-        title = "the main application resource",
-        description = "This should be the location of a jar file for Scala/Java applications, or a python script for PySpark applications.\n" +
-            "Must be Kestra internal storage url"
-    )
-    @PluginProperty(dynamic = true)
-    @NotNull
-    protected String appResource;
-
-    @Schema(
         title = "the application name."
     )
     @PluginProperty(dynamic = true)
