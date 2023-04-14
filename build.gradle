@@ -54,7 +54,7 @@ dependencies {
     compileOnly group: "io.kestra", name: "core", version: kestraVersion
 
     // libs
-    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.3.2'
+    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.4.0'
 }
 
 
