@@ -53,8 +53,8 @@ dependencies {
     // kestra
     compileOnly group: "io.kestra", name: "core", version: kestraVersion
 
-    // libs
-    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.3.2'
+    // Spark lib: must be aligned with the docker-compose-ci.yaml files and the image used in test
+    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.4.1'
 }
 
 
