@@ -3,9 +3,13 @@ package io.kestra.plugin.spark;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.models.tasks.Task;
 import io.kestra.core.runners.RunContext;
-import io.kestra.core.tasks.scripts.AbstractBash;
-import io.kestra.core.tasks.scripts.ScriptOutput;
+import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
+import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
+import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
+import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
+import io.kestra.plugin.scripts.exec.scripts.services.ScriptService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -22,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 import static io.kestra.core.utils.Rethrow.*;
@@ -31,7 +36,7 @@ import static io.kestra.core.utils.Rethrow.*;
 @EqualsAndHashCode
 @Getter
 @NoArgsConstructor
-public abstract class AbstractSubmit extends AbstractBash implements RunnableTask<ScriptOutput> {
+public abstract class AbstractSubmit extends Task implements RunnableTask<ScriptOutput> {
     @Schema(
         title = "the Spark master hostname for the application.",
         description = "[](https://spark.apache.org/docs/latest/submitting-applications.html#master-urls )"
@@ -86,45 +91,72 @@ public abstract class AbstractSubmit extends AbstractBash implements RunnableTas
     @Builder.Default
     private String sparkSubmitPath = "spark-submit";
 
-    protected List<String> finalCommandsWithInterpreter(String commandAsString) throws IOException {
-        return List.of(commandAsString);
-    }
+    @Schema(
+        title = "Additional environment variables for the current process."
+    )
+    @PluginProperty(
+        additionalProperties = String.class,
+        dynamic = true
+    )
+    protected Map<String, String> env;
+
+    @Builder.Default
+    @Schema(
+        title = "Runner to use"
+    )
+    @PluginProperty
+    @NotNull
+    @NotEmpty
+    protected RunnerType runner = RunnerType.PROCESS;
+
+    @Schema(
+        title = "Docker options when using the `DOCKER` runner"
+    )
+    @PluginProperty
+    protected DockerOptions docker;
 
     abstract protected void configure(RunContext runContext, SparkLauncher spark) throws Exception;
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
-        return run(runContext, throwSupplier(() -> {
-            SparkLauncher spark = new KestraSparkLauncher(this.envs(runContext))
-                .setMaster(runContext.render(master))
-                .setVerbose(this.verbose);
+        SparkLauncher spark = new KestraSparkLauncher(this.envs(runContext))
+            .setMaster(runContext.render(master))
+            .setVerbose(this.verbose);
 
-            if (this.name != null) {
-                spark.setAppName(runContext.render(this.name));
-            }
+        if (this.name != null) {
+            spark.setAppName(runContext.render(this.name));
+        }
 
-            if (this.configurations != null) {
-                this.configurations.forEach(throwBiConsumer((key, value) ->
-                    spark.setConf(runContext.render(key), runContext.render(value))
-                ));
-            }
+        if (this.configurations != null) {
+            this.configurations.forEach(throwBiConsumer((key, value) ->
+                spark.setConf(runContext.render(key), runContext.render(value))
+            ));
+        }
 
-            if (this.args != null) {
-                runContext.render(this.args).forEach(throwConsumer(spark::addAppArgs));
-            }
+        if (this.args != null) {
+            runContext.render(this.args).forEach(throwConsumer(spark::addAppArgs));
+        }
 
-            if (this.appFiles != null) {
-                this.appFiles.forEach(throwBiConsumer((key, value) -> spark.addFile(this.tempFile(runContext, key, value))));
-            }
+        if (this.appFiles != null) {
+            this.appFiles.forEach(throwBiConsumer((key, value) -> spark.addFile(this.tempFile(runContext, key, value))));
+        }
 
-            this.configure(runContext, spark);
+        this.configure(runContext, spark);
 
-            List<String> commands = new ArrayList<>();
-            commands.add(this.sparkSubmitPath);
-            commands.addAll(((KestraSparkLauncher) spark).getCommands());
+        List<String> commandsArgs = new ArrayList<>();
+        commandsArgs.add(this.sparkSubmitPath);
+        commandsArgs.addAll(((KestraSparkLauncher) spark).getCommands());
 
-            return String.join(" ", commands);
-        }));
+        return new CommandsWrapper(runContext)
+            .withEnv(this.envs(runContext))
+            .withRunnerType(this.runner)
+            .withDockerOptions(this.getDocker())
+            .withCommands(ScriptService.scriptCommands(
+                List.of("/bin/sh", "-c"),
+                List.of(),
+                String.join(" ", commandsArgs)
+            ))
+            .run();
     }
 
     private Map<String, String> envs(RunContext runContext) throws IllegalVariableEvaluationException {

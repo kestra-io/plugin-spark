@@ -6,10 +6,10 @@ import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
-import io.kestra.core.serializers.JacksonMapper;
-import io.kestra.core.tasks.scripts.AbstractBash;
-import io.kestra.core.tasks.scripts.ScriptOutput;
 import io.kestra.core.utils.TestsUtils;
+import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
+import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
+import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 @MicronautTest
@@ -40,10 +39,10 @@ class PythonSubmitTest {
             .id("unit-test")
             .type(JarSubmit.class.getName())
             .master("spark://localhost:37077")
-            .runner(AbstractBash.Runner.DOCKER)
-            .dockerOptions(AbstractBash.DockerOptions.builder()
+            .runner(RunnerType.DOCKER)
+            .docker(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
-                .entryPoint(List.of("/bin/sh", "-c"))
+                .entryPoint(List.of(""))
                 .networkMode("host")
                 .user("root")
                 .build()
