@@ -16,6 +16,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Collections;
 import java.util.List;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -76,6 +78,8 @@ import javax.validation.constraints.NotNull;
     }
 )
 public class SparkCLI extends AbstractExecScript {
+    private static final String DEFAULT_IMAGE = "bitnami/spark";
+
     @Schema(
         title = "The list of Spark CLI commands to run"
     )
@@ -85,14 +89,25 @@ public class SparkCLI extends AbstractExecScript {
     private List<String> commands;
 
     @Schema(
-        title = "Docker options for the `DOCKER` runner"
+        title = "Docker options for the `DOCKER` runner",
+        defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
     )
     @PluginProperty
     @Builder.Default
-    private DockerOptions docker = DockerOptions.builder()
-        .image("bitnami/spark")
-        .entryPoint(List.of())
-        .build();
+    private DockerOptions docker = DockerOptions.builder().build();
+
+    @Override
+    protected DockerOptions injectDefaults(DockerOptions original) {
+        var builder = original.toBuilder();
+        if (original.getImage() == null) {
+            builder.image(DEFAULT_IMAGE);
+        }
+        if (original.getEntryPoint() == null) {
+            builder.entryPoint(Collections.emptyList());
+        }
+
+        return builder.build();
+    }
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
