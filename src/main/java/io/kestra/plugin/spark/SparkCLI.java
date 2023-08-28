@@ -17,7 +17,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Collections;
 import java.util.List;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -53,9 +52,9 @@ import javax.validation.constraints.NotNull;
                 
                 
                           if __name__ == "__main__":
-                              spark = SparkSession \
-                                  .builder \
-                                  .appName("PythonPi") \
+                              spark = SparkSession \\
+                                  .builder \\
+                                  .appName("PythonPi") \\
                                   .getOrCreate()
                 
                               partitions = int(sys.argv[1]) if len(sys.argv) > 1 else 2
@@ -72,6 +71,8 @@ import javax.validation.constraints.NotNull;
                               spark.stop()
                     - id: hello
                       type: io.kestra.plugin.spark.SparkCLI
+                      docker:
+                        networkMode: host
                       commands:
                         - spark-submit --name Pi --master spark://localhost:7077 pi.py"""
         )
@@ -101,9 +102,6 @@ public class SparkCLI extends AbstractExecScript {
         var builder = original.toBuilder();
         if (original.getImage() == null) {
             builder.image(DEFAULT_IMAGE);
-        }
-        if (original.getEntryPoint() == null) {
-            builder.entryPoint(Collections.emptyList());
         }
 
         return builder.build();
