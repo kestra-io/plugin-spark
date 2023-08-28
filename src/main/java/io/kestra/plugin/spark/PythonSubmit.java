@@ -33,15 +33,12 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
         @Example(
             code = {
                 "runner: DOCKER",
-                "dockerOptions:",
-                "  image: bitnami/spark",
-                "  entryPoint: ",
-                "   - /bin/sh",
-                "   - -c",
+                "docker:",
+                "  networkMode: host",
                 "  user: root",
                 "master: spark://localhost:7077",
                 "args:",
-                "- 10",
+                "- \"10\"",
                 "mainScript: |",
                 "  import sys",
                 "  from random import random",

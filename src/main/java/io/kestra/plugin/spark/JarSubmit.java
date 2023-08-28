@@ -27,12 +27,6 @@ import static io.kestra.core.utils.Rethrow.*;
         @Example(
             code = {
                 "runner: DOCKER",
-                "dockerOptions:",
-                "  image: bitnami/spark",
-                "  entryPoint: ",
-                "   - /bin/sh",
-                "   - -c",
-                "  user: root",
                 "master: spark://localhost:7077",
                 "mainResource: {{ inputs.file }}",
                 "mainClass: spark.samples.App",
