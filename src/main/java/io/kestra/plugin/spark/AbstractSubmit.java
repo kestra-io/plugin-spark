@@ -37,6 +37,8 @@ import static io.kestra.core.utils.Rethrow.*;
 @Getter
 @NoArgsConstructor
 public abstract class AbstractSubmit extends Task implements RunnableTask<ScriptOutput> {
+    private static final String DEFAULT_IMAGE = "bitnami/spark";
+
     @Schema(
         title = "the Spark master hostname for the application.",
         description = "[](https://spark.apache.org/docs/latest/submitting-applications.html#master-urls )"
@@ -67,7 +69,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     @Schema(
         title = "Enables verbose reporting"
     )
-    @PluginProperty(dynamic = false)
+    @PluginProperty
     @Builder.Default
     private Boolean verbose = false;
 
@@ -110,12 +112,23 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     protected RunnerType runner = RunnerType.PROCESS;
 
     @Schema(
-        title = "Docker options when using the `DOCKER` runner"
+        title = "Docker options when using the `DOCKER` runner",
+        defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
     )
     @PluginProperty
-    protected DockerOptions docker;
+    @Builder.Default
+    protected DockerOptions docker = DockerOptions.builder().build();
 
     abstract protected void configure(RunContext runContext, SparkLauncher spark) throws Exception;
+
+    protected DockerOptions injectDefaults(DockerOptions original) {
+        var builder = original.toBuilder();
+        if (original.getImage() == null) {
+            builder.image(DEFAULT_IMAGE);
+        }
+
+        return builder.build();
+    }
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
@@ -150,7 +163,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         return new CommandsWrapper(runContext)
             .withEnv(this.envs(runContext))
             .withRunnerType(this.runner)
-            .withDockerOptions(this.getDocker())
+            .withDockerOptions(injectDefaults(this.getDocker()))
             .withCommands(ScriptService.scriptCommands(
                 List.of("/bin/sh", "-c"),
                 List.of(),
