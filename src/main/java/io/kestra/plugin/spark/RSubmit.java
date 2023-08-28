@@ -15,10 +15,7 @@ import org.apache.spark.launcher.SparkLauncher;
 
 import java.io.FileWriter;
 import java.nio.file.Path;
-import java.util.Map;
 import javax.validation.constraints.NotNull;
-
-import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 
 @SuperBuilder
 @ToString
@@ -33,11 +30,8 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
         @Example(
             code = {
                 "runner: DOCKER",
-                "dockerOptions:",
-                "  image: bitnami/spark",
-                "  entryPoint: ",
-                "   - /bin/sh",
-                "   - -c",
+                "docker:",
+                "  networkMode: host",
                 "  user: root",
                 "master: spark://localhost:7077",
                 "mainScript: |",
@@ -53,7 +47,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 )
 public class RSubmit extends AbstractSubmit {
     @Schema(
-        title = "the main python script"
+        title = "the main R script"
     )
     @PluginProperty(dynamic = true)
     @NotNull
