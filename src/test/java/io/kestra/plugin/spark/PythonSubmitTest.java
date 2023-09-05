@@ -33,7 +33,7 @@ class PythonSubmitTest {
     @Test
     void run() throws Exception {
         List<LogEntry> logs = new ArrayList<>();
-        logQueue.receive(logs::add);
+        logQueue.receive(l -> logs.add(l.getLeft()));
 
         PythonSubmit task = PythonSubmit.builder()
             .id("unit-test")

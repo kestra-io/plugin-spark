@@ -41,7 +41,7 @@ class JarSubmitTest {
     @Test
     void jar() throws Exception {
         List<LogEntry> logs = new ArrayList<>();
-        logQueue.receive(logs::add);
+        logQueue.receive(l -> logs.add(l.getLeft()));
 
         URL resource = JarSubmitTest.class.getClassLoader().getResource("app.jar");
 
