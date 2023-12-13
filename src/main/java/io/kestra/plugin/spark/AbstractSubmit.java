@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -185,7 +186,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     }
 
     protected String tempFile(RunContext runContext, String name, String url) throws IOException, IllegalVariableEvaluationException, URISyntaxException {
-        File file = runContext.tempDir().resolve(runContext.render(name)).toFile();
+        File file = runContext.resolve(Path.of(runContext.render(name))).toFile();
 
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             URI from = new URI(runContext.render(url));
