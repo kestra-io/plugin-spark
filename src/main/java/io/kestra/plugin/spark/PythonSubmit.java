@@ -16,7 +16,7 @@ import org.apache.spark.launcher.SparkLauncher;
 import java.io.FileWriter;
 import java.nio.file.Path;
 import java.util.Map;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 
