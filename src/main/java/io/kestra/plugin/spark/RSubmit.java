@@ -15,7 +15,7 @@ import org.apache.spark.launcher.SparkLauncher;
 
 import java.io.FileWriter;
 import java.nio.file.Path;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 @SuperBuilder
 @ToString
