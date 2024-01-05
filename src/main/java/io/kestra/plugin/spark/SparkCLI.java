@@ -119,7 +119,7 @@ public class SparkCLI extends AbstractExecScript {
             // spark set all logs in stdErr so we force all logs on info
             .withLogConsumer(new AbstractLogConsumer() {
                 @Override
-                public void accept(String line, Boolean aBoolean) throws Exception {
+                public void accept(String line, Boolean aBoolean) {
                     runContext.logger().info(line);
                 }
             })
