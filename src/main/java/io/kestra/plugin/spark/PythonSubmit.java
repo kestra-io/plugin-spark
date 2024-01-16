@@ -26,7 +26,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Submit a pyspark job to remote cluster"
+    title = "Submit a PySpark job to a remote cluster."
 )
 @Plugin(
     examples = {
@@ -70,15 +70,15 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 )
 public class PythonSubmit extends AbstractSubmit {
     @Schema(
-        title = "the main python script"
+        title = "The main Python script."
     )
     @PluginProperty(dynamic = true)
     @NotNull
     private String mainScript;
 
     @Schema(
-        title = "Adds a python file / zip / egg to be submitted with the application.",
-        description = "Must be Kestra internal storage url"
+        title = "Adds a Python file/zip/egg package to be submitted with the application.",
+        description = "Must be an internal storage URI."
     )
     @PluginProperty(dynamic = true, additionalProperties = String.class)
     private Map<String, String> pythonFiles;

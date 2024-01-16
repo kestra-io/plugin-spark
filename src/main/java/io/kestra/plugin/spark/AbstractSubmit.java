@@ -41,54 +41,54 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     private static final String DEFAULT_IMAGE = "bitnami/spark";
 
     @Schema(
-        title = "the Spark master hostname for the application.",
-        description = "[](https://spark.apache.org/docs/latest/submitting-applications.html#master-urls )"
+        title = "Spark master hostname for the application.",
+        description = "Spark master URL [formats](https://spark.apache.org/docs/latest/submitting-applications.html#master-urls)."
     )
     @PluginProperty(dynamic = true)
     @NotNull
     private String master;
 
     @Schema(
-        title = "the application name."
+        title = "Spark application name."
     )
     @PluginProperty(dynamic = true)
     private String name;
 
     @Schema(
-        title = "command line arguments for the application."
+        title = "Command line arguments for the application."
     )
     @PluginProperty(dynamic = true)
     private List<String> args;
 
     @Schema(
         title = "Adds a file to be submitted with the application.",
-        description = "Must be Kestra internal storage url"
+        description = "Must be an internal storage URI."
     )
     @PluginProperty(dynamic = true, additionalProperties = String.class)
     private Map<String, String> appFiles;
 
     @Schema(
-        title = "Enables verbose reporting"
+        title = "Enables verbose reporting."
     )
     @PluginProperty
     @Builder.Default
     private Boolean verbose = false;
 
     @Schema(
-        title = "configuration value for the application."
+        title = "Configuration properties for the application."
     )
     @PluginProperty(dynamic = true, additionalProperties = String.class)
     private Map<String, String> configurations;
 
 
     @Schema(
-        title = "command line arguments for the application."
+        title = "Deploy mode for the application."
     )
     @PluginProperty(dynamic = true)
     private DeployMode deployMode;
 
     @Schema(
-        title = "the `spark-submit` binary path."
+        title = "The `spark-submit` binary path."
     )
     @PluginProperty(dynamic = true)
     @Builder.Default
@@ -105,7 +105,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
 
     @Builder.Default
     @Schema(
-        title = "Runner to use"
+        title = "Script runner to use."
     )
     @PluginProperty
     @NotNull
@@ -113,7 +113,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     protected RunnerType runner = RunnerType.PROCESS;
 
     @Schema(
-        title = "Docker options when using the `DOCKER` runner",
+        title = "Docker options when using the `DOCKER` runner.",
         defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
     )
     @PluginProperty
