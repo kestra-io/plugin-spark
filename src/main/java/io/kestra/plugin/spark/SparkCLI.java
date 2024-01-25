@@ -27,12 +27,12 @@ import javax.validation.constraints.NotNull;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Execute spark CLI commands."
+    title = "Execute Spark CLI commands."
 )
 @Plugin(
     examples = {
         @Example(
-            title = "Submit a Python Spark Job to a master",
+            title = "Submit a PySpark job to a master node.",
             full = true,
             code = """
                 id: spark-cli
@@ -82,7 +82,7 @@ public class SparkCLI extends AbstractExecScript {
     private static final String DEFAULT_IMAGE = "bitnami/spark";
 
     @Schema(
-        title = "The list of Spark CLI commands to run"
+        title = "The list of Spark CLI commands to run."
     )
     @PluginProperty(dynamic = true)
     @NotNull
@@ -90,7 +90,7 @@ public class SparkCLI extends AbstractExecScript {
     private List<String> commands;
 
     @Schema(
-        title = "Docker options for the `DOCKER` runner",
+        title = "Docker options for the `DOCKER` runner.",
         defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
     )
     @PluginProperty

@@ -20,7 +20,7 @@ import static io.kestra.core.utils.Rethrow.*;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Submit a jar spark job to remote cluster"
+    title = "Submit a Spark job to a remote cluster using a JAR file."
 )
 @Plugin(
     examples = {
@@ -36,24 +36,24 @@ import static io.kestra.core.utils.Rethrow.*;
 )
 public class JarSubmit extends AbstractSubmit {
     @Schema(
-        title = "the main application resource",
-        description = "This should be the location of a jar file for Scala/Java applications, or a python script for PySpark applications.\n" +
-            "Must be Kestra internal storage url"
+        title = "The main application resource.",
+        description = "This should be the location of a JAR file for Scala/Java applications, or a Python script for PySpark applications.\n" +
+            "Must be an internal storage URI."
     )
     @PluginProperty(dynamic = true)
     @NotNull
     private String mainResource;
 
     @Schema(
-        title = "the application class name for Java/Scala applications."
+        title = "The application class name for Java/Scala applications."
     )
     @PluginProperty(dynamic = true)
     @NotNull
     private String mainClass;
 
     @Schema(
-        title = "Adds jar files to be submitted with the application.",
-        description = "Must be Kestra internal storage url"
+        title = "Additional JAR files to be submitted with the application.",
+        description = "Must be an internal storage URI."
     )
     @PluginProperty(dynamic = true, additionalProperties = String.class)
     private Map<String, String> jars;

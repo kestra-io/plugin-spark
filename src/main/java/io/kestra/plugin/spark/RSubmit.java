@@ -23,7 +23,7 @@ import javax.validation.constraints.NotNull;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Submit a R job to remote cluster"
+    title = "Submit an R job to a remote cluster."
 )
 @Plugin(
     examples = {
@@ -47,7 +47,7 @@ import javax.validation.constraints.NotNull;
 )
 public class RSubmit extends AbstractSubmit {
     @Schema(
-        title = "the main R script"
+        title = "The main R script."
     )
     @PluginProperty(dynamic = true)
     @NotNull
