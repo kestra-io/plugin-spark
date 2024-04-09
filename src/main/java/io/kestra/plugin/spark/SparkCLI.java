@@ -97,6 +97,9 @@ public class SparkCLI extends AbstractExecScript {
     @Builder.Default
     private DockerOptions docker = DockerOptions.builder().build();
 
+    @Builder.Default
+    protected String containerImage = DEFAULT_IMAGE;
+
     @Override
     protected DockerOptions injectDefaults(DockerOptions original) {
         var builder = original.toBuilder();
@@ -111,7 +114,7 @@ public class SparkCLI extends AbstractExecScript {
     public ScriptOutput run(RunContext runContext) throws Exception {
         List<String> commandsArgs = ScriptService.scriptCommands(
             this.interpreter,
-            this.beforeCommands,
+            this.getBeforeCommandsWithOptions(),
             this.commands
         );
 
