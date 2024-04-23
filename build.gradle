@@ -21,8 +21,8 @@ repositories {
     }
 }
 
-sourceCompatibility = 17
-targetCompatibility = 17
+sourceCompatibility = 21
+targetCompatibility = 21
 
 group "io.kestra.plugin"
 description 'Utilize Apache Spark for data processing within Kestra pipelines.'
@@ -33,22 +33,19 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-    // lombok
+    // Lombok
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     compileOnly "org.projectlombok:lombok:$lombokVersion"
 
-    // micronaut
-    annotationProcessor platform("io.micronaut.platform:micronaut-platform:$micronautVersion")
-    annotationProcessor "io.micronaut:micronaut-inject-java"
-    annotationProcessor "io.micronaut.validation:micronaut-validation-processor"
-
+    // Micronaut
     compileOnly platform("io.micronaut.platform:micronaut-platform:$micronautVersion")
-    compileOnly "io.micronaut:micronaut-inject"
-    compileOnly "io.micronaut.validation:micronaut-validation"
     compileOnly "io.micronaut.reactor:micronaut-reactor"
 
-    // kestra
+    // Kestra
     compileOnly group: "io.kestra", name: "core", version: kestraVersion
+
+    // Lib
+    annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
     // Spark lib: must be aligned with the docker-compose-ci.yaml files and the image used in test
     api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.5.1'
@@ -86,6 +83,7 @@ dependencies {
     testImplementation "io.micronaut.test:micronaut-test-junit5"
 
     // kestra
+    testAnnotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
     testImplementation group: "io.kestra", name: "core", version: kestraVersion
     testImplementation group: "io.kestra", name: "storage-local", version: kestraVersion
     testImplementation group: "io.kestra", name: "runner-memory", version: kestraVersion
