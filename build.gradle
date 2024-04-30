@@ -52,7 +52,7 @@ dependencies {
 
     // Spark lib: must be aligned with the docker-compose-ci.yaml files and the image used in test
     api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '3.5.1'
-    implementation group: "io.kestra.plugin", name: "plugin-script", version: kestraVersion
+    compileOnly group: "io.kestra", name: "script", version: kestraVersion
 }
 
 
@@ -87,6 +87,7 @@ dependencies {
 
     // kestra
     testImplementation group: "io.kestra", name: "core", version: kestraVersion
+    testImplementation group: "io.kestra", name: "script", version: kestraVersion
     testImplementation group: "io.kestra", name: "storage-local", version: kestraVersion
     testImplementation group: "io.kestra", name: "runner-memory", version: kestraVersion
 
