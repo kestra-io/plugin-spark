@@ -190,7 +190,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
 
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             URI from = new URI(runContext.render(url));
-            IOUtils.copyLarge(runContext.uriToInputStream(from), fileOutputStream);
+            IOUtils.copyLarge(runContext.storage().getFile(from), fileOutputStream);
 
             return file.getAbsoluteFile().toString();
         }
