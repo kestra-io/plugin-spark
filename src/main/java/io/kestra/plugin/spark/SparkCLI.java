@@ -39,10 +39,10 @@ import jakarta.validation.constraints.NotNull;
                 namespace: dev
                 tasks:
                   - id: workingDirectory
-                    type: io.kestra.core.tasks.flows.WorkingDirectory
+                    type: io.kestra.plugin.core.flow.WorkingDirectory
                     tasks:
                     - id: local-file
-                      type: io.kestra.core.tasks.storages.LocalFiles
+                      type: io.kestra.plugin.core.storage.LocalFiles
                       inputs:
                         pi.py: |
                           import sys
