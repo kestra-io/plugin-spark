@@ -89,14 +89,6 @@ public class SparkCLI extends AbstractExecScript {
     @NotEmpty
     private List<String> commands;
 
-    @Schema(
-        title = "Docker options for the `DOCKER` runner.",
-        defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
-    )
-    @PluginProperty
-    @Builder.Default
-    private DockerOptions docker = DockerOptions.builder().build();
-
     @Builder.Default
     protected String containerImage = DEFAULT_IMAGE;
 
