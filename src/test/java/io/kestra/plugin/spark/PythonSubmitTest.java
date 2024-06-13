@@ -14,8 +14,8 @@ import io.kestra.core.junit.annotations.KestraTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,8 +32,7 @@ class PythonSubmitTest {
 
     @Test
     void run() throws Exception {
-        List<LogEntry> logs = new ArrayList<>();
-        logQueue.receive(l -> logs.add(l.getLeft()));
+        Flux<LogEntry> receive = TestsUtils.receive(logQueue);
 
         PythonSubmit task = PythonSubmit.builder()
             .id("unit-test")
@@ -84,6 +83,6 @@ class PythonSubmitTest {
         ScriptOutput runOutput = task.run(runContext);
 
         assertThat(runOutput.getExitCode(), is(0));
-        assertThat(logs.stream().filter(logEntry -> logEntry.getMessage().contains("Pi is roughly")).count(), is(1L));
+        assertThat(receive.toStream().filter(logEntry -> logEntry.getMessage().contains("Pi is roughly")).count(), is(1L));
     }
 }

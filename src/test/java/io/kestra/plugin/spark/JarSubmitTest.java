@@ -15,11 +15,11 @@ import io.kestra.core.junit.annotations.KestraTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import java.io.FileInputStream;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,8 +40,7 @@ class JarSubmitTest {
 
     @Test
     void jar() throws Exception {
-        List<LogEntry> logs = new ArrayList<>();
-        logQueue.receive(l -> logs.add(l.getLeft()));
+        Flux<LogEntry> receive = TestsUtils.receive(logQueue);
 
         URL resource = JarSubmitTest.class.getClassLoader().getResource("app.jar");
 
@@ -71,6 +70,6 @@ class JarSubmitTest {
         ScriptOutput runOutput = task.run(runContext);
 
         assertThat(runOutput.getExitCode(), is(0));
-        assertThat(logs.stream().filter(logEntry -> logEntry.getMessage().contains("Lines with Lorem")).count(), is(1L));
+        assertThat(receive.toStream().filter(logEntry -> logEntry.getMessage().contains("Lines with Lorem")).count(), is(1L));
     }
 }
