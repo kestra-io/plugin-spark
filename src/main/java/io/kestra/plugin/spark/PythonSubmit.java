@@ -85,7 +85,7 @@ public class PythonSubmit extends AbstractSubmit {
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
-        Path path = runContext.tempFile(".py");
+        Path path = runContext.workingDir().createTempFile(".py");
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {
             IOUtils.write(runContext.render(this.mainScript), fileWriter);
             fileWriter.flush();

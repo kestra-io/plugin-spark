@@ -56,7 +56,7 @@ public class RSubmit extends AbstractSubmit {
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
-        Path path = runContext.tempFile(".R");
+        Path path = runContext.workingDir().createTempFile(".R");
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {
             IOUtils.write(runContext.render(this.mainScript), fileWriter);
             fileWriter.flush();
