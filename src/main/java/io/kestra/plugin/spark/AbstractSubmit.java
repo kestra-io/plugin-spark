@@ -5,12 +5,15 @@ import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.models.tasks.Task;
 import io.kestra.core.models.tasks.runners.ScriptService;
+import io.kestra.core.models.tasks.runners.TaskRunner;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
 import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
+import io.kestra.plugin.scripts.runner.docker.Docker;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.io.IOUtils;
@@ -103,26 +106,41 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     )
     protected Map<String, String> env;
 
-    @Builder.Default
     @Schema(
-        title = "Script runner to use."
+        title = "Script runner to use.",
+        description = "Deprecated - use 'taskRunner' instead."
     )
     @PluginProperty
-    @NotNull
-    @NotEmpty
-    protected RunnerType runner = RunnerType.PROCESS;
+    protected RunnerType runner;
 
     @Schema(
-        title = "Docker options when using the `DOCKER` runner.",
-        defaultValue = "{image=" + DEFAULT_IMAGE + ", pullPolicy=ALWAYS}"
+        title = "Deprecated, use 'taskRunner' instead"
+    )
+    @PluginProperty
+    @Deprecated
+    private DockerOptions docker;
+
+    @Schema(
+        title = "The task runner to use.",
+        description = "Task runners are provided by plugins, each have their own properties."
     )
     @PluginProperty
     @Builder.Default
-    protected DockerOptions docker = DockerOptions.builder().build();
+    @Valid
+    private TaskRunner taskRunner = Docker.INSTANCE;
+
+    @Schema(title = "The task runner container image, only used if the task runner is container-based.")
+    @PluginProperty(dynamic = true)
+    @Builder.Default
+    private String containerImage = DEFAULT_IMAGE;
 
     abstract protected void configure(RunContext runContext, SparkLauncher spark) throws Exception;
 
     protected DockerOptions injectDefaults(DockerOptions original) {
+        if (original == null) {
+            return null;
+        }
+        
         var builder = original.toBuilder();
         if (original.getImage() == null) {
             builder.image(DEFAULT_IMAGE);
@@ -165,6 +183,8 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             .withEnv(this.envs(runContext))
             .withRunnerType(this.runner)
             .withDockerOptions(injectDefaults(this.getDocker()))
+            .withTaskRunner(this.taskRunner)
+            .withContainerImage(this.containerImage)
             .withCommands(ScriptService.scriptCommands(
                 List.of("/bin/sh", "-c"),
                 List.of(),
