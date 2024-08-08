@@ -91,7 +91,7 @@ public class SparkCLI extends AbstractExecScript {
     protected DockerOptions injectDefaults(DockerOptions original) {
         var builder = original.toBuilder();
         if (original.getImage() == null) {
-            builder.image(DEFAULT_IMAGE);
+            builder.image(this.getContainerImage());
         }
 
         return builder.build();
