@@ -38,7 +38,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                 "  user: root",
                 "master: spark://localhost:7077",
                 "args:",
-                "- \"10\"",
+                "  - \"10\"",
                 "mainScript: |",
                 "  import sys",
                 "  from random import random",

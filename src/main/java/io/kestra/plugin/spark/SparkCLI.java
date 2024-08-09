@@ -35,7 +35,7 @@ import jakarta.validation.constraints.NotNull;
             title = "Submit a PySpark job to a master node.",
             full = true,
             code = """
-                id: spark-cli
+                id: spark_cli
                 namespace: company.team
                 tasks:
                   - id: hello
