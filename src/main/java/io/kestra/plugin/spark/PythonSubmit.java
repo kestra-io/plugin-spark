@@ -34,7 +34,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
             full = true,
             code = """
                 id: spark_python_submit
-                namespace: company.name
+                namespace: company.team
 
                 tasks:
                   - id: python_submit
@@ -45,7 +45,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                       user: root
                     master: spark://localhost:7077
                     args:
-                    - "10"
+                      - "10"
                     mainScript: |
                       import sys
                       from random import random

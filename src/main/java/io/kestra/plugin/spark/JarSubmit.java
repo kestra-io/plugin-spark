@@ -28,7 +28,7 @@ import static io.kestra.core.utils.Rethrow.*;
             full = true,
             code = """
                 id: spark_jar_submit
-                namespace: company.name
+                namespace: company.team
 
                 inputs:
                   - id: file
