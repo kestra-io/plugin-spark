@@ -28,20 +28,27 @@ import jakarta.validation.constraints.NotNull;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "runner: DOCKER",
-                "docker:",
-                "  networkMode: host",
-                "  user: root",
-                "master: spark://localhost:7077",
-                "mainScript: |",
-                "  library(SparkR, lib.loc = c(file.path(Sys.getenv(\"SPARK_HOME\"), \"R\", \"lib\")))",
-                "  sparkR.session()",
-                "   ",
-                "  print(\"The SparkR session has initialized successfully.\")",
-                "   ",
-                "  sparkR.stop()",
-            }
+            full = true,
+            code = """
+                id: spark_r_submit
+                namespace: company.name
+
+                tasks:
+                  - id: r_submit
+                    type: io.kestra.plugin.spark.RSubmit
+                    runner: DOCKER
+                    docker:
+                      networkMode: host
+                      user: root
+                    master: spark://localhost:7077
+                    mainScript: |
+                      library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+                      sparkR.session()
+                    
+                      print("The SparkR session has initialized successfully.")
+                    
+                      sparkR.stop()
+                """
         )
     }
 )

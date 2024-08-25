@@ -37,6 +37,7 @@ import jakarta.validation.constraints.NotNull;
             code = """
                 id: spark_cli
                 namespace: company.team
+                
                 tasks:
                   - id: hello
                     type: io.kestra.plugin.spark.SparkCLI
