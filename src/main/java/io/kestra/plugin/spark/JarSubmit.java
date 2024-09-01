@@ -25,12 +25,23 @@ import static io.kestra.core.utils.Rethrow.*;
 @Plugin(
     examples = {
         @Example(
-            code = {
-                "runner: DOCKER",
-                "master: spark://localhost:7077",
-                "mainResource: {{ inputs.file }}",
-                "mainClass: spark.samples.App",
-            }
+            full = true,
+            code = """
+                id: spark_jar_submit
+                namespace: company.name
+
+                inputs:
+                  - id: file
+                    type: FILE
+
+                tasks:
+                  - id: jar_submit
+                    type: io.kestra.plugin.spark.JarSubmit
+                    runner: DOCKER
+                    master: spark://localhost:7077
+                    mainResource: {{ inputs.file }}
+                    mainClass: spark.samples.App
+                """
         )
     }
 )
