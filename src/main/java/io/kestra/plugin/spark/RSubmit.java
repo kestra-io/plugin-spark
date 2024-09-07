@@ -31,7 +31,7 @@ import jakarta.validation.constraints.NotNull;
             full = true,
             code = """
                 id: spark_r_submit
-                namespace: company.name
+                namespace: company.team
 
                 tasks:
                   - id: r_submit
