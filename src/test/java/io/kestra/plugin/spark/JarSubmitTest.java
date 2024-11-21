@@ -46,6 +46,7 @@ class JarSubmitTest {
 
         URI put = storageInterface.put(
             null,
+            null,
             new URI("/file/storage/app.jar"),
             new FileInputStream(Objects.requireNonNull(resource).getFile())
         );
