@@ -3,6 +3,7 @@ package io.kestra.plugin.spark;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -51,26 +52,26 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                       from random import random
                       from operator import add
                       from pyspark.sql import SparkSession
-                    
-                    
+
+
                       if __name__ == "__main__":
                           spark = SparkSession \
                               .builder \
                               .appName("PythonPi") \
                               .getOrCreate()
-                    
+
                           partitions = int(sys.argv[1]) if len(sys.argv) > 1 else 2
                           n = 100000 * partitions
-                    
+
                           def f(_: int) -> float:
                               x = random() * 2 - 1
                               y = random() * 2 - 1
                               return 1 if x ** 2 + y ** 2 <= 1 else 0
-                    
+
                           count = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
                           print("Pi is roughly %f" % (4.0 * count / n))
-                    
-                          spark.stop()                
+
+                          spark.stop()
                 """
         )
     }
@@ -79,29 +80,27 @@ public class PythonSubmit extends AbstractSubmit {
     @Schema(
         title = "The main Python script."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    private String mainScript;
+    private Property<String> mainScript;
 
     @Schema(
         title = "Adds a Python file/zip/egg package to be submitted with the application.",
         description = "Must be an internal storage URI."
     )
-    @PluginProperty(dynamic = true, additionalProperties = String.class)
-    private Map<String, String> pythonFiles;
+    private Property<Map<String, String>> pythonFiles;
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
         Path path = runContext.workingDir().createTempFile(".py");
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {
-            IOUtils.write(runContext.render(this.mainScript), fileWriter);
+            IOUtils.write(runContext.render(this.mainScript).as(String.class).orElseThrow(), fileWriter);
             fileWriter.flush();
         }
 
         spark.setAppResource("file://" + path.toFile().getAbsolutePath());
 
-        if (this.pythonFiles != null) {
-            this.pythonFiles.forEach(throwBiConsumer((key, value) -> spark.addPyFile(this.tempFile(runContext, key, value))));
-        }
+        runContext.render(this.pythonFiles).asMap(String.class, String.class)
+            .forEach(throwBiConsumer((key, value) -> spark.addPyFile(this.tempFile(runContext, key, value))));
+
     }
 }

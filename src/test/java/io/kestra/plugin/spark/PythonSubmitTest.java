@@ -2,6 +2,7 @@ package io.kestra.plugin.spark;
 
 import com.google.common.collect.ImmutableMap;
 import io.kestra.core.models.executions.LogEntry;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.runners.RunContext;
@@ -37,8 +38,8 @@ class PythonSubmitTest {
         PythonSubmit task = PythonSubmit.builder()
             .id("unit-test")
             .type(JarSubmit.class.getName())
-            .master("spark://localhost:37077")
-            .runner(RunnerType.DOCKER)
+            .master(Property.of("spark://localhost:37077"))
+            .runner(Property.of(RunnerType.DOCKER))
             .docker(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
@@ -46,9 +47,9 @@ class PythonSubmitTest {
                 .user("root")
                 .build()
             )
-            .name("PythonPiCalculate")
-            .args(List.of("10"))
-            .mainScript("import sys\n" +
+            .name(Property.of("PythonPiCalculate"))
+            .args(Property.of(List.of("10")))
+            .mainScript(Property.of("import sys\n" +
                 "from random import random\n" +
                 "from operator import add\n" +
                 "\n" +
@@ -76,7 +77,7 @@ class PythonSubmitTest {
                 "    print(\"Pi is roughly %f\" % (4.0 * count / n))\n" +
                 "\n" +
                 "    spark.stop()\n"
-            )
+            ))
             .build();
 
         RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, ImmutableMap.of());
