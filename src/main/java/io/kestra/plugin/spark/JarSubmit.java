@@ -3,6 +3,7 @@ package io.kestra.plugin.spark;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -51,33 +52,29 @@ public class JarSubmit extends AbstractSubmit {
         description = "This should be the location of a JAR file for Scala/Java applications, or a Python script for PySpark applications.\n" +
             "Must be an internal storage URI."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    private String mainResource;
+    private Property<String> mainResource;
 
     @Schema(
         title = "The application class name for Java/Scala applications."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    private String mainClass;
+    private Property<String> mainClass;
 
     @Schema(
         title = "Additional JAR files to be submitted with the application.",
         description = "Must be an internal storage URI."
     )
-    @PluginProperty(dynamic = true, additionalProperties = String.class)
-    private Map<String, String> jars;
+    private Property<Map<String, String>> jars;
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
-        String appJar = this.tempFile(runContext, "app.jar", this.mainResource);
+        String appJar = this.tempFile(runContext, "app.jar", runContext.render(this.mainResource).as(String.class).orElseThrow());
         spark.setAppResource("file://" + appJar);
 
-        spark.setMainClass(runContext.render(mainClass));
+        spark.setMainClass(runContext.render(mainClass).as(String.class).orElseThrow());
 
-        if (this.jars != null) {
-            this.jars.forEach(throwBiConsumer((key, value) -> spark.addJar(this.tempFile(runContext, key, value))));
-        }
+        runContext.render(jars).asMap(String.class, String.class)
+            .forEach(throwBiConsumer((key, value) -> spark.addJar(this.tempFile(runContext, key, value))));
     }
 }

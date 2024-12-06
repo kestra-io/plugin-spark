@@ -2,6 +2,7 @@ package io.kestra.plugin.spark;
 
 import com.google.common.collect.ImmutableMap;
 import io.kestra.core.models.executions.LogEntry;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.queues.QueueFactoryInterface;
 import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.runners.RunContext;
@@ -54,8 +55,8 @@ class JarSubmitTest {
         JarSubmit task = JarSubmit.builder()
             .id("unit-test")
             .type(JarSubmit.class.getName())
-            .master("spark://localhost:37077")
-            .runner(RunnerType.DOCKER)
+            .master(Property.of("spark://localhost:37077"))
+            .runner(Property.of(RunnerType.DOCKER))
             .docker(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
@@ -63,8 +64,8 @@ class JarSubmitTest {
                 .user("root")
                 .build()
             )
-            .mainClass("spark.samples.App")
-            .mainResource(put.toString())
+            .mainClass(Property.of("spark.samples.App"))
+            .mainResource(Property.of(put.toString()))
             .build();
 
         RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, ImmutableMap.of());
