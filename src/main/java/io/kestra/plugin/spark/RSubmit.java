@@ -3,6 +3,7 @@ package io.kestra.plugin.spark;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -44,9 +45,9 @@ import jakarta.validation.constraints.NotNull;
                     mainScript: |
                       library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
                       sparkR.session()
-                    
+
                       print("The SparkR session has initialized successfully.")
-                    
+
                       sparkR.stop()
                 """
         )
@@ -56,16 +57,15 @@ public class RSubmit extends AbstractSubmit {
     @Schema(
         title = "The main R script."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    private String mainScript;
+    private Property<String> mainScript;
 
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
         Path path = runContext.workingDir().createTempFile(".R");
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {
-            IOUtils.write(runContext.render(this.mainScript), fileWriter);
+            IOUtils.write(runContext.render(this.mainScript).as(String.class).orElseThrow(), fileWriter);
             fileWriter.flush();
         }
 
