@@ -40,8 +40,9 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                 tasks:
                   - id: python_submit
                     type: io.kestra.plugin.spark.PythonSubmit
-                    runner: DOCKER
-                    docker:
+                    taskRunner:
+                      type: DOCKER
+                      containerImage: bitnami/spark:3.4.1
                       networkMode: host
                       user: root
                     master: spark://localhost:7077

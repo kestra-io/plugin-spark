@@ -8,8 +8,6 @@ import io.kestra.core.queues.QueueInterface;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.TestsUtils;
-import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
-import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 import io.kestra.core.junit.annotations.KestraTest;
 import jakarta.inject.Inject;
@@ -39,8 +37,8 @@ class PythonSubmitTest {
             .id("unit-test")
             .type(JarSubmit.class.getName())
             .master(Property.of("spark://localhost:37077"))
-            .runner(Property.of(RunnerType.DOCKER))
-            .docker(DockerOptions.builder()
+            .taskRunner(Property.of(RunnerType.DOCKER))
+            .containerImage(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
                 .networkMode("host")

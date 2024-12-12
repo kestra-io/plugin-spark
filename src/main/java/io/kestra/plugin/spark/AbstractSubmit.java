@@ -99,6 +99,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "Script runner to use.",
         description = "Deprecated - use 'taskRunner' instead."
     )
+    @Deprecated
     protected Property<RunnerType> runner;
 
     @Schema(
@@ -170,8 +171,6 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
 
         return new CommandsWrapper(runContext)
             .withEnv(this.envs(runContext))
-            .withRunnerType(runContext.render(this.runner).as(RunnerType.class).orElseThrow())
-            .withDockerOptions(injectDefaults(this.getDocker()))
             .withTaskRunner(this.taskRunner)
             .withContainerImage(this.containerImage)
             .withCommands(ScriptService.scriptCommands(
