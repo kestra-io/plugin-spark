@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import jakarta.validation.constraints.NotEmpty;
+
 import jakarta.validation.constraints.NotNull;
 
 import static io.kestra.core.utils.Rethrow.*;
@@ -115,7 +115,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     @PluginProperty
     @Builder.Default
     @Valid
-    private TaskRunner taskRunner = Docker.instance();
+    private TaskRunner<?> taskRunner = Docker.instance();
 
     @Schema(title = "The task runner container image, only used if the task runner is container-based.")
     @PluginProperty(dynamic = true)
