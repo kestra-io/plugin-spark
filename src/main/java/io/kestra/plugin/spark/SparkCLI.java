@@ -81,10 +81,8 @@ public class SparkCLI extends AbstractExecScript {
     @Schema(
         title = "The list of Spark CLI commands to run."
     )
-    @PluginProperty(dynamic = true)
     @NotNull
-    @NotEmpty
-    private List<String> commands;
+    private Property<List<String>> commands;
 
     @Builder.Default
     protected Property<String> containerImage = Property.of(DEFAULT_IMAGE);
@@ -102,9 +100,9 @@ public class SparkCLI extends AbstractExecScript {
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
         List<String> commandsArgs = ScriptService.scriptCommands(
-            this.interpreter,
+            runContext.render(this.interpreter).asList(String.class),
             this.getBeforeCommandsWithOptions(runContext),
-            this.commands
+            runContext.render(this.commands).asList(String.class)
         );
 
         return this.commands(runContext)
