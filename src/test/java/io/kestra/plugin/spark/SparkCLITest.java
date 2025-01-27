@@ -1,7 +1,7 @@
 package io.kestra.plugin.spark;
 
 import com.google.common.collect.ImmutableMap;
-import io.kestra.core.runners.RunContext;
+import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.TestsUtils;
 import io.kestra.core.junit.annotations.KestraTest;
@@ -23,7 +23,7 @@ class SparkCLITest {
         var spark = SparkCLI.builder()
             .id("spark-cli")
             .type(SparkCLI.class.getName())
-            .commands(List.of("spark-submit --version"))
+            .commands(Property.of(List.of("spark-submit --version")))
             .build();
         var runContext = TestsUtils.mockRunContext(runContextFactory, spark, ImmutableMap.of());
 
