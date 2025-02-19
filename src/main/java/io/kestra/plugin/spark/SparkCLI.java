@@ -1,5 +1,6 @@
 package io.kestra.plugin.spark;
 
+import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
@@ -99,12 +100,6 @@ public class SparkCLI extends AbstractExecScript {
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
-        List<String> commandsArgs = ScriptService.scriptCommands(
-            runContext.render(this.interpreter).asList(String.class),
-            this.getBeforeCommandsWithOptions(runContext),
-            runContext.render(this.commands).asList(String.class)
-        );
-
         return this.commands(runContext)
             // spark set all logs in stdErr so we force all logs on info
             .withLogConsumer(new AbstractLogConsumer() {
@@ -113,7 +108,9 @@ public class SparkCLI extends AbstractExecScript {
                     runContext.logger().info(line);
                 }
             })
-            .withCommands(commandsArgs)
+            .withInterpreter(this.interpreter)
+            .withBeforeCommands(Property.of(this.getBeforeCommandsWithOptions(runContext)))
+            .withCommands(this.commands)
             .run();
     }
 }
