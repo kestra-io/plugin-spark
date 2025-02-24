@@ -109,7 +109,8 @@ public class SparkCLI extends AbstractExecScript {
                 }
             })
             .withInterpreter(this.interpreter)
-            .withBeforeCommands(Property.of(this.getBeforeCommandsWithOptions(runContext)))
+            .withBeforeCommands(this.beforeCommands)
+            .withBeforeCommandsWithOptions(true)
             .withCommands(this.commands)
             .run();
     }
