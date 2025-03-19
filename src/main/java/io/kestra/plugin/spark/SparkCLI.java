@@ -19,8 +19,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.util.List;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 @SuperBuilder
@@ -103,6 +103,10 @@ public class SparkCLI extends AbstractExecScript {
         return this.commands(runContext)
             // spark set all logs in stdErr so we force all logs on info
             .withLogConsumer(new AbstractLogConsumer() {
+                @Override
+                public void accept(String line, Boolean isStdErr, Instant instant) {
+                    runContext.logger().info(line);
+                }
                 @Override
                 public void accept(String line, Boolean aBoolean) {
                     runContext.logger().info(line);
