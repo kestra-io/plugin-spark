@@ -38,8 +38,8 @@ class PythonSubmitTest {
         PythonSubmit task = PythonSubmit.builder()
             .id("unit-test")
             .type(JarSubmit.class.getName())
-            .master(Property.of("spark://localhost:37077"))
-            .runner(Property.of(RunnerType.DOCKER))
+            .master(Property.ofValue("spark://localhost:37077"))
+            .runner(Property.ofValue(RunnerType.DOCKER))
             .docker(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
@@ -47,9 +47,9 @@ class PythonSubmitTest {
                 .user("root")
                 .build()
             )
-            .name(Property.of("PythonPiCalculate"))
-            .args(Property.of(List.of("10")))
-            .mainScript(Property.of("import sys\n" +
+            .name(Property.ofValue("PythonPiCalculate"))
+            .args(Property.ofValue(List.of("10")))
+            .mainScript(Property.ofValue("import sys\n" +
                 "from random import random\n" +
                 "from operator import add\n" +
                 "\n" +

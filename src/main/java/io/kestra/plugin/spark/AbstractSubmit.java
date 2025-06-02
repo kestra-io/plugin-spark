@@ -71,7 +71,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "Enables verbose reporting."
     )
     @Builder.Default
-    private Property<Boolean> verbose = Property.of(false);
+    private Property<Boolean> verbose = Property.ofValue(false);
 
     @Schema(
         title = "Configuration properties for the application."
@@ -88,7 +88,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "The `spark-submit` binary path."
     )
     @Builder.Default
-    private Property<String> sparkSubmitPath = Property.of("spark-submit");
+    private Property<String> sparkSubmitPath = Property.ofValue("spark-submit");
 
     @Schema(
         title = "Additional environment variables for the current process."
@@ -174,8 +174,8 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             .withDockerOptions(injectDefaults(this.getDocker()))
             .withTaskRunner(this.taskRunner)
             .withContainerImage(this.containerImage)
-            .withInterpreter(Property.of(List.of("/bin/sh", "-c")))
-            .withCommands(Property.of(List.of(String.join(" ", commandsArgs))))
+            .withInterpreter(Property.ofValue(List.of("/bin/sh", "-c")))
+            .withCommands(Property.ofValue(List.of(String.join(" ", commandsArgs))))
             .run();
     }
 
