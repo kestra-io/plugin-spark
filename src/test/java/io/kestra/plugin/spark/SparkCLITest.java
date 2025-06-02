@@ -23,7 +23,7 @@ class SparkCLITest {
         var spark = SparkCLI.builder()
             .id("spark-cli")
             .type(SparkCLI.class.getName())
-            .commands(Property.of(List.of("spark-submit --version")))
+            .commands(Property.ofValue(List.of("spark-submit --version")))
             .build();
         var runContext = TestsUtils.mockRunContext(runContextFactory, spark, ImmutableMap.of());
 

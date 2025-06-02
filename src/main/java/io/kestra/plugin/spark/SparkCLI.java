@@ -86,7 +86,7 @@ public class SparkCLI extends AbstractExecScript {
     private Property<List<String>> commands;
 
     @Builder.Default
-    protected Property<String> containerImage = Property.of(DEFAULT_IMAGE);
+    protected Property<String> containerImage = Property.ofValue(DEFAULT_IMAGE);
 
     @Override
     protected DockerOptions injectDefaults(DockerOptions original) {

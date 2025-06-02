@@ -56,8 +56,8 @@ class JarSubmitTest {
         JarSubmit task = JarSubmit.builder()
             .id("unit-test")
             .type(JarSubmit.class.getName())
-            .master(Property.of("spark://localhost:37077"))
-            .runner(Property.of(RunnerType.DOCKER))
+            .master(Property.ofValue("spark://localhost:37077"))
+            .runner(Property.ofValue(RunnerType.DOCKER))
             .docker(DockerOptions.builder()
                 .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
@@ -65,8 +65,8 @@ class JarSubmitTest {
                 .user("root")
                 .build()
             )
-            .mainClass(Property.of("spark.samples.App"))
-            .mainResource(Property.of(put.toString()))
+            .mainClass(Property.ofValue("spark.samples.App"))
+            .mainResource(Property.ofValue(put.toString()))
             .build();
 
         RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, ImmutableMap.of());
