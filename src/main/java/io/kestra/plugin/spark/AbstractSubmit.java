@@ -82,7 +82,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     @Schema(
         title = "Deploy mode for the application."
     )
-    private Property<DeployMode> deployMode;
+    private Property<DeployMode> deployMode = Property.ofValue(DeployMode.CLIENT);
 
     @Schema(
         title = "The `spark-submit` binary path."
@@ -160,6 +160,10 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         if (this.appFiles != null) {
             runContext.render(this.appFiles).asMap(String.class, String.class)
                 .forEach(throwBiConsumer((key, val) -> spark.addFile(this.tempFile(runContext, key, val))));
+        }
+
+        if (this.deployMode != null) {
+            spark.setDeployMode(runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT).name());
         }
 
         this.configure(runContext, spark);
