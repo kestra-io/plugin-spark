@@ -1,15 +1,12 @@
 package io.kestra.plugin.spark;
 
-import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
+import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.models.tasks.runners.AbstractLogConsumer;
-import io.kestra.core.models.tasks.runners.ScriptService;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.scripts.exec.AbstractExecScript;
-import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -76,7 +73,7 @@ import jakarta.validation.constraints.NotNull;
         )
     }
 )
-public class SparkCLI extends AbstractExecScript {
+public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptOutput> {
     private static final String DEFAULT_IMAGE = "bitnami/spark";
 
     @Schema(
@@ -87,16 +84,6 @@ public class SparkCLI extends AbstractExecScript {
 
     @Builder.Default
     protected Property<String> containerImage = Property.ofValue(DEFAULT_IMAGE);
-
-    @Override
-    protected DockerOptions injectDefaults(DockerOptions original) {
-        var builder = original.toBuilder();
-        if (original.getImage() == null) {
-            builder.image(DEFAULT_IMAGE);
-        }
-
-        return builder.build();
-    }
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
