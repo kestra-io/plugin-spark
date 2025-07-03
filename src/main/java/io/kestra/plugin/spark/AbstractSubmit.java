@@ -82,6 +82,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     @Schema(
         title = "Deploy mode for the application."
     )
+    @Builder.Default
     private Property<DeployMode> deployMode = Property.ofValue(DeployMode.CLIENT);
 
     @Schema(
@@ -141,7 +142,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     public ScriptOutput run(RunContext runContext) throws Exception {
         SparkLauncher spark = new KestraSparkLauncher(this.envs(runContext))
             .setMaster(runContext.render(master).as(String.class).orElseThrow())
-            .setVerbose(runContext.render(verbose).as(Boolean.class).orElseThrow());
+            .setVerbose(runContext.render(verbose).as(Boolean.class).orElse(false));
 
         if (this.name != null) {
             spark.setAppName(runContext.render(this.name).as(String.class).orElseThrow());
@@ -153,7 +154,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         }
 
         if (this.args != null) {
-            runContext.render(this.args).asMap(String.class, String.class)
+            runContext.render(this.args).asList(String.class)
                 .forEach(throwConsumer(spark::addAppArgs));
         }
 
@@ -163,18 +164,20 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         }
 
         if (this.deployMode != null) {
-            spark.setDeployMode(runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT).name());
+            spark.setDeployMode(runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT).value());
         }
+
+        runContext.logger().info(runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT).value());
 
         this.configure(runContext, spark);
 
         List<String> commandsArgs = new ArrayList<>();
-        commandsArgs.add(runContext.render(this.sparkSubmitPath).as(String.class).orElseThrow());
+        commandsArgs.add(runContext.render(this.sparkSubmitPath).as(String.class).orElse("spark-submit"));
         commandsArgs.addAll(((KestraSparkLauncher) spark).getCommands());
 
         return new CommandsWrapper(runContext)
             .withEnv(this.envs(runContext))
-            .withRunnerType(runContext.render(this.runner).as(RunnerType.class).orElseThrow())
+            .withRunnerType(runContext.render(this.runner).as(RunnerType.class).orElse(RunnerType.DOCKER))
             .withDockerOptions(injectDefaults(this.getDocker()))
             .withTaskRunner(this.taskRunner)
             .withContainerImage(this.containerImage)
@@ -206,7 +209,22 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     }
 
     public enum DeployMode {
-        CLIENT,
-        CLUSTER,
+        CLIENT("client"),
+        CLUSTER("cluster");
+
+        private final String value;
+
+        DeployMode(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        public String value() {
+            return value;
+        }
     }
 }
