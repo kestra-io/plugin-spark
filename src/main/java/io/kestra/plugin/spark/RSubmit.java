@@ -36,20 +36,20 @@ import jakarta.validation.constraints.NotNull;
 
             tasks:
                 - id: r_submit
-                type: io.kestra.plugin.spark.RSubmit
-                containerImage: bitnami/spark
-                taskRunner:
-                    type: io.kestra.plugin.scripts.runner.docker.Docker
-                    networkMode: host
-                    user: root
-                master: spark://localhost:7077
-                mainScript: |
-                    library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
-                    sparkR.session()
+                  type: io.kestra.plugin.spark.RSubmit
+                  containerImage: bitnami/spark
+                  taskRunner:
+                      type: io.kestra.plugin.scripts.runner.docker.Docker
+                      networkMode: host
+                      user: root
+                  master: spark://localhost:7077
+                  mainScript: |
+                      library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+                      sparkR.session()
 
-                    print("The SparkR session has initialized successfully.")
+                      print("The SparkR session has initialized successfully.")
 
-                    sparkR.stop()"""
+                      sparkR.stop()"""
         )
     }
 )
