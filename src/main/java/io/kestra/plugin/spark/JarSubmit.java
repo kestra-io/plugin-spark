@@ -44,7 +44,7 @@ import static io.kestra.core.utils.Rethrow.*;
                     networkMode: host
                     user: root
                 master: spark://localhost:7077
-                mainResource: {{ inputs.file }}
+                mainResource: "{{ inputs.file }}"
                 mainClass: spark.samples.App"""
         )
     }
