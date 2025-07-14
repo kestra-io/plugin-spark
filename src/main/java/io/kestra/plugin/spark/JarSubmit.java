@@ -32,20 +32,20 @@ import static io.kestra.core.utils.Rethrow.*;
             namespace: company.team
 
             inputs:
-                - id: file
-                  type: FILE
+              - id: file
+                type: FILE
 
             tasks:
-                - id: jar_submit
-                  type: io.kestra.plugin.spark.JarSubmit
-                  containerImage: bitnami/spark
-                  taskRunner:
-                      type: io.kestra.plugin.scripts.runner.docker.Docker
-                      networkMode: host
-                      user: root
-                  master: spark://localhost:7077
-                  mainResource: {{ inputs.file }}
-                  mainClass: spark.samples.App"""
+              - id: jar_submit
+                type: io.kestra.plugin.spark.JarSubmit
+                containerImage: bitnami/spark
+                taskRunner:
+                    type: io.kestra.plugin.scripts.runner.docker.Docker
+                    networkMode: host
+                    user: root
+                master: spark://localhost:7077
+                mainResource: {{ inputs.file }}
+                mainClass: spark.samples.App"""
         )
     }
 )
