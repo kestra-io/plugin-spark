@@ -56,10 +56,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
 
 
                       if __name__ == "__main__":
-                          spark = SparkSession \
-                              .builder \
-                              .appName("PythonPi") \
-                              .getOrCreate()
+                          spark = SparkSession.builder.appName("PythonPi").getOrCreate()
 
                           partitions = int(sys.argv[1]) if len(sys.argv) > 1 else 2
                           n = 100000 * partitions
