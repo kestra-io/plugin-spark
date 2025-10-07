@@ -18,6 +18,8 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
+
 import jakarta.validation.constraints.NotNull;
 
 @SuperBuilder
@@ -62,8 +64,8 @@ import jakarta.validation.constraints.NotNull;
                         print("Pi is roughly %f" % (4.0 * count / n))
 
                         spark.stop()
-                containerImage: bitnami/spark
                 taskRunner:
+                  type: io.kestra.plugin.scripts.runner.docker.Docker
                   networkMode: host
                 commands:
                   - spark-submit --name Pi --master spark://localhost:7077 pi.py"""
@@ -71,7 +73,7 @@ import jakarta.validation.constraints.NotNull;
     }
 )
 public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptOutput> {
-    private static final String DEFAULT_IMAGE = "bitnami/spark";
+    private static final String DEFAULT_IMAGE = "apache/spark:3.5.7-java17-r";
 
     @Schema(
         title = "The list of Spark CLI commands to run."
@@ -84,6 +86,12 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
 
     @Override
     public ScriptOutput run(RunContext runContext) throws Exception {
+        var rBeforeCommands = runContext.render(this.beforeCommands).asList(String.class);
+
+        if (rBeforeCommands.stream().noneMatch(c -> c.contains("export PATH")))
+            rBeforeCommands = Stream.concat(Stream.of("export PATH=$PATH:/opt/spark/bin"), rBeforeCommands.stream()).toList();
+
+
         return this.commands(runContext)
             // spark set all logs in stdErr so we force all logs on info
             .withLogConsumer(new AbstractLogConsumer() {
@@ -97,7 +105,7 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
                 }
             })
             .withInterpreter(this.interpreter)
-            .withBeforeCommands(this.beforeCommands)
+            .withBeforeCommands(Property.ofValue(rBeforeCommands))
             .withBeforeCommandsWithOptions(true)
             .withCommands(this.commands)
             .run();

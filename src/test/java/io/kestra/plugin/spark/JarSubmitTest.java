@@ -59,7 +59,6 @@ class JarSubmitTest {
             .master(Property.ofValue("spark://localhost:37077"))
             .runner(Property.ofValue(RunnerType.DOCKER))
             .docker(DockerOptions.builder()
-                .image("bitnami/spark:3.4.1")
                 .entryPoint(List.of(""))
                 .networkMode("host")
                 .user("root")

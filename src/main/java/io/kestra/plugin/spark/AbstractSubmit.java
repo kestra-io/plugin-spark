@@ -42,7 +42,7 @@ import static io.kestra.core.utils.Rethrow.*;
 @Getter
 @NoArgsConstructor
 public abstract class AbstractSubmit extends Task implements RunnableTask<ScriptOutput> {
-    private static final String DEFAULT_IMAGE = "bitnami/spark";
+    private static final String DEFAULT_IMAGE = "apache/spark:3.5.7-java17-r";
 
     @Schema(
         title = "Spark master hostname for the application.",
@@ -89,7 +89,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "The `spark-submit` binary path."
     )
     @Builder.Default
-    private Property<String> sparkSubmitPath = Property.ofValue("spark-submit");
+    private Property<String> sparkSubmitPath = Property.ofValue("/opt/spark/bin/spark-submit");
 
     @Schema(
         title = "Additional environment variables for the current process."

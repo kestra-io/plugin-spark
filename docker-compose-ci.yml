@@ -1,29 +1,21 @@
-version: '3'
-
 services:
-  spark:
-    image: docker.io/bitnami/spark:3.4.1
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
+  spark-master:
+    image: apache/spark:3.5.7-java17-r
+    container_name: spark-master
+    command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master" ]
     ports:
-      - '38080:8080'
-      - '37077:7077'
+      - "38080:8080"
+      - "37077:7077"
+
 
   spark-worker:
-    image: docker.io/bitnami/spark:3.4.1
+    image: apache/spark:3.5.7-java17-r
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077" ]
     environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
       - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
+      - SPARK_WORKER_MEMORY=1G
     ports:
-      - '8081:8081'
-    hostname: localhost
+      - "8081:8081"
