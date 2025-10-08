@@ -73,7 +73,7 @@ import jakarta.validation.constraints.NotNull;
     }
 )
 public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptOutput> {
-    private static final String DEFAULT_IMAGE = "apache/spark:3.5.7-java17-r";
+    private static final String DEFAULT_IMAGE = "apache/spark:4.0.1-java17-r";
 
     @Schema(
         title = "The list of Spark CLI commands to run."

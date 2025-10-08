@@ -42,7 +42,7 @@ import static io.kestra.core.utils.Rethrow.*;
 @Getter
 @NoArgsConstructor
 public abstract class AbstractSubmit extends Task implements RunnableTask<ScriptOutput> {
-    private static final String DEFAULT_IMAGE = "apache/spark:3.5.7-java17-r";
+    private static final String DEFAULT_IMAGE = "apache/spark:4.0.1-java17-r";
 
     @Schema(
         title = "Spark master hostname for the application.",
