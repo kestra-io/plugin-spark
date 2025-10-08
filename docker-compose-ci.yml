@@ -1,6 +1,6 @@
 services:
   spark-master:
-    image: apache/spark:4.0.1-java17-r
+    image: apache/spark:4.0.1-java21-r
     container_name: spark-master
     command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master" ]
     ports:
@@ -9,7 +9,7 @@ services:
 
 
   spark-worker:
-    image: apache/spark:4.0.1-java17-r
+    image: apache/spark:4.0.1-java21-r
     container_name: spark-worker
     depends_on:
       - spark-master
