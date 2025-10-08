@@ -91,7 +91,6 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
         if (rBeforeCommands.stream().noneMatch(c -> c.contains("export PATH")))
             rBeforeCommands = Stream.concat(Stream.of("export PATH=$PATH:/opt/spark/bin"), rBeforeCommands.stream()).toList();
 
-
         return this.commands(runContext)
             // spark set all logs in stdErr so we force all logs on info
             .withLogConsumer(new AbstractLogConsumer() {
