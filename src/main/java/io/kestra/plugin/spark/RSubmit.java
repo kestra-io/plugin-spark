@@ -37,7 +37,6 @@ import jakarta.validation.constraints.NotNull;
             tasks:
               - id: r_submit
                 type: io.kestra.plugin.spark.RSubmit
-                containerImage: bitnami/spark
                 taskRunner:
                   type: io.kestra.plugin.scripts.runner.docker.Docker
                   networkMode: host

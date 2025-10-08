@@ -38,7 +38,6 @@ import static io.kestra.core.utils.Rethrow.*;
             tasks:
               - id: jar_submit
                 type: io.kestra.plugin.spark.JarSubmit
-                containerImage: bitnami/spark
                 taskRunner:
                     type: io.kestra.plugin.scripts.runner.docker.Docker
                     networkMode: host
