@@ -1,0 +1,8 @@
+group: io.kestra.plugin.spark
+name: "spark"
+title: "Apache Spark"
+description: "This sub-group of plugins contains tasks for submitting Apache Spark jobs. Apache Spark is a multi-language engine for executing data engineering, data science, and machine learning jobs on distributed computing clusters."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
