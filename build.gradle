@@ -1,11 +1,11 @@
 plugins {
-    id "com.vanniktech.maven.publish" version "0.34.0"
+    id "com.vanniktech.maven.publish" version "0.36.0"
     id "io.kestra.gradle.inject-bom-versions" version "1.0.0"
     id 'java-library'
     id "idea"
     id 'jacoco'
     id "com.adarshr.test-logger" version "4.0.0"
-    id "com.gradleup.shadow" version "9.2.2"
+    id "com.gradleup.shadow" version "9.3.1"
     id 'signing'
     id "com.github.ben-manes.versions" version "0.53.0"
     id 'net.researchgate.release' version '3.1.0'
@@ -55,7 +55,7 @@ dependencies {
     annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
     // Spark lib: must be aligned with the docker-compose-ci.yaml files and the image used in test
-    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '4.0.1'
+    api group: 'org.apache.spark', name: 'spark-launcher_2.13', version: '4.1.0-preview4'
     compileOnly group: "io.kestra", name: "script", version: kestraVersion
 }
 
@@ -120,7 +120,7 @@ configurations {
 }
 
 dependencies {
-    agent "org.aspectj:aspectjweaver:1.9.24"
+    agent "org.aspectj:aspectjweaver:1.9.25.1"
 }
 
 test {
