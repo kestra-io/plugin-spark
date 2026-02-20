@@ -24,7 +24,8 @@ import jakarta.validation.constraints.NotNull;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Submit an R job to a remote cluster."
+    title = "Submit SparkR job to Spark",
+    description = "Writes the provided R script to a temp file and runs it with spark-submit on the configured Spark master."
 )
 @Plugin(
     examples = {
@@ -54,7 +55,8 @@ import jakarta.validation.constraints.NotNull;
 )
 public class RSubmit extends AbstractSubmit {
     @Schema(
-        title = "The main R script."
+        title = "Main R script content",
+        description = "Inline R script body written to a temporary .R file and used as the application resource."
     )
     @NotNull
     private Property<String> mainScript;

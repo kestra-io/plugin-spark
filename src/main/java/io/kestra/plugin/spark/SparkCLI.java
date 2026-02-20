@@ -28,7 +28,8 @@ import jakarta.validation.constraints.NotNull;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "Execute Spark CLI commands."
+    title = "Run Spark CLI commands",
+    description = "Executes provided Spark CLI lines (e.g., spark-submit, spark-sql) inside the task runner. Prepends /opt/spark/bin to PATH when missing and streams Spark logs as info. Defaults to container image apache/spark:4.0.1-java21-r."
 )
 @Plugin(
     examples = {
@@ -76,11 +77,16 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
     private static final String DEFAULT_IMAGE = "apache/spark:4.0.1-java21-r";
 
     @Schema(
-        title = "The list of Spark CLI commands to run."
+        title = "CLI commands to execute",
+        description = "Ordered list of Spark CLI invocations run with the configured interpreter; required."
     )
     @NotNull
     private Property<List<String>> commands;
 
+    @Schema(
+        title = "Container image for task runner",
+        description = "Applies when the task runner is container-based; defaults to `apache/spark:4.0.1-java21-r`."
+    )
     @Builder.Default
     protected Property<String> containerImage = Property.ofValue(DEFAULT_IMAGE);
 

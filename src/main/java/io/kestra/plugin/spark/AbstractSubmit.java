@@ -45,80 +45,91 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     private static final String DEFAULT_IMAGE = "apache/spark:4.0.1-java21-r";
 
     @Schema(
-        title = "Spark master hostname for the application.",
-        description = "Spark master URL [formats](https://spark.apache.org/docs/latest/submitting-applications.html#master-urls)."
+        title = "Set Spark master endpoint",
+        description = "Required Spark master URL (e.g., `spark://host:port`, `local[*]`). Must follow Spark master URL formats."
     )
     @NotNull
     private Property<String> master;
 
     @Schema(
-        title = "Spark application name."
+        title = "Name the Spark application",
+        description = "Optional application name passed to Spark; falls back to Spark defaults when empty."
     )
     private Property<String> name;
 
     @Schema(
-        title = "Command line arguments for the application."
+        title = "Pass arguments to application",
+        description = "Command-line arguments forwarded to the application in order."
     )
     private Property<List<String>> args;
 
     @Schema(
-        title = "Adds a file to be submitted with the application.",
-        description = "Must be an internal storage URI."
+        title = "Ship additional files with job",
+        description = "Map of local filenames to internal storage URIs; each file is downloaded to the working directory and sent with --files."
     )
     private Property<Map<String, String>> appFiles;
 
     @Schema(
-        title = "Enables verbose reporting."
+        title = "Enable verbose spark-submit output",
+        description = "Defaults to false; sets --verbose for detailed submission logs."
     )
     @Builder.Default
     private Property<Boolean> verbose = Property.ofValue(false);
 
     @Schema(
-        title = "Configuration properties for the application."
+        title = "Spark configuration overrides",
+        description = "Key/value Spark configurations applied via --conf before submission."
     )
     private Property<Map<String, String>> configurations;
 
 
     @Schema(
-        title = "Deploy mode for the application."
+        title = "Choose Spark deploy mode",
+        description = "client or cluster; defaults to client when unset."
     )
     @Builder.Default
     private Property<DeployMode> deployMode = Property.ofValue(DeployMode.CLIENT);
 
     @Schema(
-        title = "The `spark-submit` binary path."
+        title = "Path to spark-submit binary",
+        description = "Absolute path to spark-submit; defaults to `/opt/spark/bin/spark-submit`."
     )
     @Builder.Default
     private Property<String> sparkSubmitPath = Property.ofValue("/opt/spark/bin/spark-submit");
 
     @Schema(
-        title = "Additional environment variables for the current process."
+        title = "Environment variables for spark-submit",
+        description = "Rendered key/value pairs added to the submission process environment."
     )
     protected Property<Map<String, String>> env;
 
     @Schema(
-        title = "Script runner to use.",
-        description = "Deprecated - use 'taskRunner' instead."
+        title = "Execution engine (deprecated)",
+        description = "Deprecated; use taskRunner instead. Defaults to RunnerType.DOCKER when specified."
     )
     protected Property<RunnerType> runner;
 
     @Schema(
-        title = "Deprecated, use 'taskRunner' instead"
+        title = "Docker runner options (deprecated)",
+        description = "Deprecated in favor of taskRunner; only applied when using the legacy runner property."
     )
     @PluginProperty
     @Deprecated
     private DockerOptions docker;
 
     @Schema(
-        title = "The task runner to use.",
-        description = "Task runners are provided by plugins, each have their own properties."
+        title = "Task runner implementation",
+        description = "Runner definition (e.g., Docker). Defaults to the Docker task runner; each runner exposes its own properties."
     )
     @PluginProperty
     @Builder.Default
     @Valid
     private TaskRunner<?> taskRunner = Docker.instance();
 
-    @Schema(title = "The task runner container image, only used if the task runner is container-based.")
+    @Schema(
+        title = "Container image for task runner",
+        description = "Used when the task runner is container-based; defaults to `apache/spark:4.0.1-java21-r`."
+    )
     @PluginProperty(dynamic = true)
     @Builder.Default
     private String containerImage = DEFAULT_IMAGE;
