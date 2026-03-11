@@ -1,22 +1,23 @@
 package io.kestra.plugin.spark;
 
+import java.io.FileWriter;
+import java.nio.file.Path;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.spark.launcher.SparkLauncher;
+
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.io.IOUtils;
-import org.apache.spark.launcher.SparkLauncher;
-
-import java.io.FileWriter;
-import java.nio.file.Path;
-import jakarta.validation.constraints.NotNull;
 
 @SuperBuilder
 @ToString
@@ -32,24 +33,24 @@ import jakarta.validation.constraints.NotNull;
         @Example(
             full = true,
             code = """
-            id: spark_r_submit
-            namespace: company.team
+                id: spark_r_submit
+                namespace: company.team
 
-            tasks:
-              - id: r_submit
-                type: io.kestra.plugin.spark.RSubmit
-                taskRunner:
-                  type: io.kestra.plugin.scripts.runner.docker.Docker
-                  networkMode: host
-                  user: root
-                master: spark://localhost:7077
-                mainScript: |
-                  library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
-                  sparkR.session()
+                tasks:
+                  - id: r_submit
+                    type: io.kestra.plugin.spark.RSubmit
+                    taskRunner:
+                      type: io.kestra.plugin.scripts.runner.docker.Docker
+                      networkMode: host
+                      user: root
+                    master: spark://localhost:7077
+                    mainScript: |
+                      library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+                      sparkR.session()
 
-                  print("The SparkR session has initialized successfully.")
+                      print("The SparkR session has initialized successfully.")
 
-                  sparkR.stop()"""
+                      sparkR.stop()"""
         )
     }
 )
@@ -60,7 +61,6 @@ public class RSubmit extends AbstractSubmit {
     )
     @NotNull
     private Property<String> mainScript;
-
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {

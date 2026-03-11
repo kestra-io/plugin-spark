@@ -1,6 +1,16 @@
 package io.kestra.plugin.spark;
 
+import java.io.FileInputStream;
+import java.net.URI;
+import java.net.URL;
+import java.util.List;
+import java.util.Objects;
+
+import org.junit.jupiter.api.Test;
+
 import com.google.common.collect.ImmutableMap;
+
+import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.executions.LogEntry;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.queues.QueueFactoryInterface;
@@ -13,17 +23,10 @@ import io.kestra.core.utils.TestsUtils;
 import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
 import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
-import io.kestra.core.junit.annotations.KestraTest;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-
-import java.io.FileInputStream;
-import java.net.URI;
-import java.net.URL;
-import java.util.List;
-import java.util.Objects;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -58,11 +61,12 @@ class JarSubmitTest {
             .type(JarSubmit.class.getName())
             .master(Property.ofValue("spark://localhost:37077"))
             .runner(Property.ofValue(RunnerType.DOCKER))
-            .docker(DockerOptions.builder()
-                .entryPoint(List.of(""))
-                .networkMode("host")
-                .user("root")
-                .build()
+            .docker(
+                DockerOptions.builder()
+                    .entryPoint(List.of(""))
+                    .networkMode("host")
+                    .user("root")
+                    .build()
             )
             .mainClass(Property.ofValue("spark.samples.App"))
             .mainResource(Property.ofValue(put.toString()))

@@ -1,26 +1,5 @@
 package io.kestra.plugin.spark;
 
-import io.kestra.core.exceptions.IllegalVariableEvaluationException;
-import io.kestra.core.models.annotations.PluginProperty;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.models.tasks.RunnableTask;
-import io.kestra.core.models.tasks.Task;
-import io.kestra.core.models.tasks.runners.ScriptService;
-import io.kestra.core.models.tasks.runners.TaskRunner;
-import io.kestra.core.runners.RunContext;
-import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
-import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
-import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
-import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
-import io.kestra.plugin.scripts.runner.docker.Docker;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Valid;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.apache.commons.io.IOUtils;
-import org.apache.spark.launcher.KestraSparkLauncher;
-import org.apache.spark.launcher.SparkLauncher;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,7 +11,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.spark.launcher.KestraSparkLauncher;
+import org.apache.spark.launcher.SparkLauncher;
+
+import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.models.tasks.Task;
+import io.kestra.core.models.tasks.runners.TaskRunner;
+import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
+import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
+import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
+import io.kestra.plugin.scripts.exec.scripts.runners.CommandsWrapper;
+import io.kestra.plugin.scripts.runner.docker.Docker;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.*;
 
@@ -81,7 +81,6 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         description = "Key/value Spark configurations applied via --conf before submission."
     )
     private Property<Map<String, String>> configurations;
-
 
     @Schema(
         title = "Choose Spark deploy mode",
@@ -201,7 +200,8 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         HashMap<String, String> result = new HashMap<>();
 
         runContext.render(this.env).asMap(String.class, String.class)
-            .forEach(throwBiConsumer((s, s2) -> {
+            .forEach(throwBiConsumer((s, s2) ->
+            {
                 result.put(runContext.render(s), runContext.render(s2));
             }));
 
