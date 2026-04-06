@@ -46,6 +46,7 @@ import lombok.experimental.SuperBuilder;
                     inputFiles:
                       pi.py: |
                         import sys
+import io.kestra.core.models.annotations.PluginProperty;
                         from random import random
                         from operator import add
                         from pyspark.sql import SparkSession
@@ -81,6 +82,7 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
         description = "Ordered list of Spark CLI invocations run with the configured interpreter; required."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<List<String>> commands;
 
     @Schema(
@@ -88,6 +90,7 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
         description = "Applies when the task runner is container-based; defaults to `apache/spark:4.0.1-java21-r`."
     )
     @Builder.Default
+    @PluginProperty(group = "execution")
     protected Property<String> containerImage = Property.ofValue(DEFAULT_IMAGE);
 
     @Override
