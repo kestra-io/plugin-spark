@@ -15,6 +15,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.*;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -56,6 +57,7 @@ public class JarSubmit extends AbstractSubmit {
         description = "Internal storage URI to the runnable application JAR uploaded to the working directory."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> mainResource;
 
     @Schema(
@@ -63,12 +65,14 @@ public class JarSubmit extends AbstractSubmit {
         description = "Fully qualified entrypoint class passed to spark-submit `--class`."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> mainClass;
 
     @Schema(
         title = "Additional dependency JARs",
         description = "Map of filenames to internal storage URIs added via `--jars`."
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, String>> jars;
 
     @Override

@@ -49,24 +49,28 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         description = "Required Spark master URL (e.g., `spark://host:port`, `local[*]`). Must follow Spark master URL formats."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> master;
 
     @Schema(
         title = "Name the Spark application",
         description = "Optional application name passed to Spark; falls back to Spark defaults when empty."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> name;
 
     @Schema(
         title = "Pass arguments to application",
         description = "Command-line arguments forwarded to the application in order."
     )
+    @PluginProperty(group = "advanced")
     private Property<List<String>> args;
 
     @Schema(
         title = "Ship additional files with job",
         description = "Map of local filenames to internal storage URIs; each file is downloaded to the working directory and sent with --files."
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, String>> appFiles;
 
     @Schema(
@@ -74,12 +78,14 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         description = "Defaults to false; sets --verbose for detailed submission logs."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<Boolean> verbose = Property.ofValue(false);
 
     @Schema(
         title = "Spark configuration overrides",
         description = "Key/value Spark configurations applied via --conf before submission."
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, String>> configurations;
 
     @Schema(
@@ -87,6 +93,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         description = "client or cluster; defaults to client when unset."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<DeployMode> deployMode = Property.ofValue(DeployMode.CLIENT);
 
     @Schema(
@@ -94,25 +101,28 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         description = "Absolute path to spark-submit; defaults to `/opt/spark/bin/spark-submit`."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<String> sparkSubmitPath = Property.ofValue("/opt/spark/bin/spark-submit");
 
     @Schema(
         title = "Environment variables for spark-submit",
         description = "Rendered key/value pairs added to the submission process environment."
     )
+    @PluginProperty(group = "execution")
     protected Property<Map<String, String>> env;
 
     @Schema(
         title = "Execution engine (deprecated)",
         description = "Deprecated; use taskRunner instead. Defaults to RunnerType.DOCKER when specified."
     )
+    @PluginProperty(group = "execution")
     protected Property<RunnerType> runner;
 
     @Schema(
         title = "Docker runner options (deprecated)",
         description = "Deprecated in favor of taskRunner; only applied when using the legacy runner property."
     )
-    @PluginProperty
+    @PluginProperty(group = "execution")
     @Deprecated
     private DockerOptions docker;
 
@@ -120,7 +130,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "Task runner implementation",
         description = "Runner definition (e.g., Docker). Defaults to the Docker task runner; each runner exposes its own properties."
     )
-    @PluginProperty
+    @PluginProperty(group = "execution")
     @Builder.Default
     @Valid
     private TaskRunner<?> taskRunner = Docker.instance();
@@ -129,7 +139,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "Container image for task runner",
         description = "Used when the task runner is container-based; defaults to `apache/spark:4.0.1-java21-r`."
     )
-    @PluginProperty(dynamic = true)
+    @PluginProperty(dynamic = true, group = "execution")
     @Builder.Default
     private String containerImage = DEFAULT_IMAGE;
 

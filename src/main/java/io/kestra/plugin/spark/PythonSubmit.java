@@ -51,6 +51,7 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                       - "10"
                     mainScript: |
                       import sys
+import io.kestra.core.models.annotations.PluginProperty;
                       from random import random
                       from operator import add
                       from pyspark.sql import SparkSession
@@ -81,12 +82,14 @@ public class PythonSubmit extends AbstractSubmit {
         description = "Inline script body written to a temporary .py file and used as the application resource."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> mainScript;
 
     @Schema(
         title = "Additional Python files or archives",
         description = "Map of filenames to internal storage URIs passed through `--py-files`."
     )
+    @PluginProperty(group = "source")
     private Property<Map<String, String>> pythonFiles;
 
     @Override

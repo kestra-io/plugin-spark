@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -60,6 +61,7 @@ public class RSubmit extends AbstractSubmit {
         description = "Inline R script body written to a temporary .R file and used as the application resource."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> mainScript;
 
     @Override
