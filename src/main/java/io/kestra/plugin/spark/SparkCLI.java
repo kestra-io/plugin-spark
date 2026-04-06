@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.models.tasks.runners.AbstractLogConsumer;
@@ -46,7 +47,6 @@ import lombok.experimental.SuperBuilder;
                     inputFiles:
                       pi.py: |
                         import sys
-import io.kestra.core.models.annotations.PluginProperty;
                         from random import random
                         from operator import add
                         from pyspark.sql import SparkSession
