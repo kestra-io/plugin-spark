@@ -52,7 +52,6 @@ import static io.kestra.core.utils.Rethrow.throwBiConsumer;
                       - "10"
                     mainScript: |
                       import sys
-import io.kestra.core.models.annotations.PluginProperty;
                       from random import random
                       from operator import add
                       from pyspark.sql import SparkSession
