@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,8 +14,7 @@ import com.google.common.collect.ImmutableMap;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.executions.LogEntry;
 import io.kestra.core.models.property.Property;
-import io.kestra.core.queues.QueueFactoryInterface;
-import io.kestra.core.queues.QueueInterface;
+import io.kestra.core.queues.DispatchQueueInterface;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.storages.StorageInterface;
@@ -25,8 +25,6 @@ import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import reactor.core.publisher.Flux;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -40,12 +38,12 @@ class JarSubmitTest {
     private StorageInterface storageInterface;
 
     @Inject
-    @Named(QueueFactoryInterface.WORKERTASKLOG_NAMED)
-    private QueueInterface<LogEntry> logQueue;
+    private DispatchQueueInterface<LogEntry> logQueue;
 
     @Test
     void jar() throws Exception {
-        Flux<LogEntry> receive = TestsUtils.receive(logQueue);
+        List<LogEntry> logs = new CopyOnWriteArrayList<>();
+        logQueue.addListener(logs::add);
 
         URL resource = JarSubmitTest.class.getClassLoader().getResource("app.jar");
 
@@ -76,6 +74,7 @@ class JarSubmitTest {
         ScriptOutput runOutput = task.run(runContext);
 
         assertThat(runOutput.getExitCode(), is(0));
-        assertThat(receive.toStream().filter(logEntry -> logEntry.getMessage().contains("Lines with Lorem")).count(), is(1L));
+        TestsUtils.awaitLogs(logs, logEntry -> logEntry.getMessage() != null && logEntry.getMessage().contains("Lines with Lorem"), 1);
+        assertThat(logs.stream().filter(logEntry -> logEntry.getMessage() != null && logEntry.getMessage().contains("Lines with Lorem")).count(), is(1L));
     }
 }
