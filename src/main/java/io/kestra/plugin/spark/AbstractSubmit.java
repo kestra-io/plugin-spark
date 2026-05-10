@@ -195,11 +195,14 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         commandsArgs.add(runContext.render(this.sparkSubmitPath).as(String.class).orElse("spark-submit"));
         commandsArgs.addAll(((KestraSparkLauncher) spark).getCommands());
 
+        DockerOptions resolvedDocker = injectDefaults(this.getDocker());
+        TaskRunner<?> resolvedRunner = resolvedDocker != null ? Docker.from(resolvedDocker) : this.taskRunner;
+
         return new CommandsWrapper(runContext)
             .withEnv(this.envs(runContext))
             .withRunnerType(runContext.render(this.runner).as(RunnerType.class).orElse(RunnerType.DOCKER))
-            .withDockerOptions(injectDefaults(this.getDocker()))
-            .withTaskRunner(this.taskRunner)
+            .withDockerOptions(resolvedDocker)
+            .withTaskRunner(resolvedRunner)
             .withContainerImage(this.containerImage)
             .withInterpreter(Property.ofValue(List.of("/bin/sh", "-c")))
             .withCommands(Property.ofValue(List.of(String.join(" ", commandsArgs))))
