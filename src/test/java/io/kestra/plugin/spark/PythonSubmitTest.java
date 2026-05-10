@@ -14,9 +14,8 @@ import io.kestra.core.queues.DispatchQueueInterface;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.TestsUtils;
-import io.kestra.plugin.scripts.exec.scripts.models.DockerOptions;
-import io.kestra.plugin.scripts.exec.scripts.models.RunnerType;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
+import io.kestra.plugin.scripts.runner.docker.Docker;
 
 import jakarta.inject.Inject;
 
@@ -40,9 +39,9 @@ class PythonSubmitTest {
             .id("unit-test")
             .type(JarSubmit.class.getName())
             .master(Property.ofValue("spark://localhost:37077"))
-            .runner(Property.ofValue(RunnerType.DOCKER))
-            .docker(
-                DockerOptions.builder()
+            .taskRunner(
+                Docker.builder()
+                    .type(Docker.class.getName())
                     .entryPoint(List.of(""))
                     .networkMode("host")
                     .user("root")
