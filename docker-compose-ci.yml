@@ -2,10 +2,15 @@ services:
   spark-master:
     image: apache/spark:4.0.1-java21-r
     container_name: spark-master
-    command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master" ]
+    command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0" ]
     ports:
       - "38080:8080"
       - "37077:7077"
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/8080'" ]
+      interval: 5s
+      retries: 30
+      start_period: 15s
 
 
   spark-worker:
