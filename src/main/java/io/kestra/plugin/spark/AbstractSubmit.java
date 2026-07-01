@@ -201,8 +201,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             .withDockerOptions(injectDefaults(this.getDocker()))
             .withTaskRunner(this.taskRunner)
             .withContainerImage(this.containerImage)
-            .withInterpreter(Property.ofValue(List.of("/bin/sh", "-c")))
-            .withCommands(Property.ofValue(List.of(String.join(" ", commandsArgs))))
+            .withCommands(Property.ofValue(commandsArgs))
             .run();
     }
 
