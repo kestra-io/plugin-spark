@@ -3,9 +3,13 @@ services:
     image: apache/spark:4.0.1-java21-r
     container_name: spark-master
     command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master" ]
+    environment:
+      # REST submission API, used by the tasks when `resume` is enabled
+      - SPARK_MASTER_OPTS=-Dspark.master.rest.enabled=true
     ports:
       - "38080:8080"
       - "37077:7077"
+      - "36066:6066"
 
 
   spark-worker:
@@ -15,7 +19,8 @@ services:
       - spark-master
     command: [ "/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077" ]
     environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=1G
+      # in cluster deploy mode, the driver also runs on the worker, so leave room for an executor next to it
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
     ports:
       - "8081:8081"

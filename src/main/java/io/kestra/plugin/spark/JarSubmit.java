@@ -1,13 +1,16 @@
 package io.kestra.plugin.spark;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.launcher.SparkLauncher;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.spark.resume.ClusterSubmission;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +18,6 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import static io.kestra.core.utils.Rethrow.*;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -48,13 +50,35 @@ import io.kestra.core.models.annotations.PluginProperty;
                     master: spark://localhost:7077
                     mainResource: "{{ inputs.file }}"
                     mainClass: spark.samples.App"""
+        ),
+        @Example(
+            title = "Submit a job in cluster mode, and re-attach to the running driver instead of submitting it again if the Kestra worker restarts.",
+            full = true,
+            code = """
+                id: spark_jar_submit_resume
+                namespace: company.team
+
+                tasks:
+                  - id: jar_submit
+                    type: io.kestra.plugin.spark.JarSubmit
+                    master: spark://spark-master:7077
+                    deployMode: CLUSTER
+                    resume: true
+                    restUrl: http://spark-master:6066
+                    mainResource: file:///opt/spark/examples/jars/spark-examples.jar
+                    mainClass: org.apache.spark.examples.SparkPi
+                    args:
+                      - "100\""""
         )
     }
 )
 public class JarSubmit extends AbstractSubmit {
     @Schema(
         title = "Application JAR resource",
-        description = "Internal storage URI to the runnable application JAR uploaded to the working directory."
+        description = """
+            Internal storage URI to the runnable application JAR uploaded to the working directory. With `resume` \
+            enabled, a URI visible to every node of the Spark cluster instead (for example `hdfs://`, `https://`, \
+            `s3a://`, or `file://` for a path present on every node), passed to the cluster as is."""
     )
     @NotNull
     @PluginProperty(group = "main")
@@ -70,10 +94,20 @@ public class JarSubmit extends AbstractSubmit {
 
     @Schema(
         title = "Additional dependency JARs",
-        description = "Map of filenames to internal storage URIs added via `--jars`."
+        description = "Map of filenames to internal storage URIs added via `--jars`. With `resume` enabled, the values must be URIs visible to every node of the Spark cluster."
     )
     @PluginProperty(group = "advanced")
     private Property<Map<String, String>> jars;
+
+    @Override
+    protected ClusterSubmission clusterSubmission(RunContext runContext) throws Exception {
+        return this.buildClusterSubmission(
+            runContext,
+            runContext.render(this.mainResource).as(String.class).orElseThrow(),
+            runContext.render(this.mainClass).as(String.class).orElseThrow(),
+            List.copyOf(runContext.render(this.jars).asMap(String.class, String.class).values())
+        );
+    }
 
     @Override
     protected void configure(RunContext runContext, SparkLauncher spark) throws Exception {
