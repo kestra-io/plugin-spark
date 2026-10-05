@@ -103,8 +103,8 @@ public class JarSubmit extends AbstractSubmit {
     protected ClusterSubmission clusterSubmission(RunContext runContext) throws Exception {
         return this.buildClusterSubmission(
             runContext,
-            runContext.render(this.mainResource).as(String.class).orElseThrow(),
-            runContext.render(this.mainClass).as(String.class).orElseThrow(),
+            runContext.render(this.mainResource).as(String.class).filter(value -> !value.isBlank()).orElseThrow(() -> renderedEmpty("mainResource")),
+            runContext.render(this.mainClass).as(String.class).filter(value -> !value.isBlank()).orElseThrow(() -> renderedEmpty("mainClass")),
             List.copyOf(runContext.render(this.jars).asMap(String.class, String.class).values())
         );
     }

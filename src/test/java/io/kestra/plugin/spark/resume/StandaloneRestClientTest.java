@@ -6,8 +6,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.kestra.core.serializers.JacksonMapper;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -15,10 +13,14 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class StandaloneRestClientTest {
+    private static final ClusterSubmission SUBMISSION = new ClusterSubmission(
+        "file:///opt/app.jar", "com.example.App", List.of(), Map.of(), Map.of()
+    );
+
     @Test
     void createSendsTheSparkSubmitProtocolMessage() throws Exception {
         try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url() + "/")) {
-            String submissionId = client.create(
+            var submissionId = client.create(
                 new ClusterSubmission(
                     "file:///opt/app.jar",
                     "com.example.App",
@@ -31,7 +33,7 @@ class StandaloneRestClientTest {
             assertThat(submissionId, is(StubSparkMaster.SUBMISSION_ID));
             assertThat(master.createBodies, hasSize(1));
 
-            JsonNode body = JacksonMapper.ofJson().readTree(master.createBodies.getFirst());
+            var body = JacksonMapper.ofJson().readTree(master.createBodies.getFirst());
             assertThat(body.get("action").asText(), is("CreateSubmissionRequest"));
             assertThat(body.get("clientSparkVersion").isNull(), is(false));
             assertThat(body.get("appResource").asText(), is("file:///opt/app.jar"));
@@ -47,18 +49,58 @@ class StandaloneRestClientTest {
         try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url())) {
             master.rejectCreate = true;
 
-            var exception = assertThrows(
-                StandaloneRestClient.SubmissionRejectedException.class,
-                () -> client.create(new ClusterSubmission("file:///opt/app.jar", "com.example.App", List.of(), Map.of(), Map.of()))
-            );
+            var exception = assertThrows(StandaloneRestClient.SubmissionRejectedException.class, () -> client.create(SUBMISSION));
             assertThat(exception.getMessage(), containsString("STANDBY"));
+        }
+    }
+
+    @Test
+    void sparkErrorResponseIsAnUnexpectedResponse() throws Exception {
+        try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url())) {
+            master.errorOnCreate = true;
+
+            var exception = assertThrows(StandaloneRestClient.UnexpectedResponseException.class, () -> client.create(SUBMISSION));
+            assertThat(exception.getMessage(), containsString("HTTP 400"));
+            assertThat(exception.getMessage(), containsString("Malformed request"));
+        }
+    }
+
+    @Test
+    void gatewayTimeoutIsNotAnUnexpectedResponse() throws Exception {
+        try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url())) {
+            master.gatewayTimeoutOnCreate = true;
+
+            // a proxy may have forwarded the request, so whether a driver exists stays unknown
+            var exception = assertThrows(IOException.class, () -> client.create(SUBMISSION));
+            assertThat(exception, not(instanceOf(StandaloneRestClient.UnexpectedResponseException.class)));
+            assertThat(exception.getMessage(), containsString("HTTP 504"));
+        }
+    }
+
+    @Test
+    void anotherServiceIsAnUnexpectedResponseWithATruncatedBody() throws Exception {
+        try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url() + "/long-html")) {
+            var exception = assertThrows(StandaloneRestClient.UnexpectedResponseException.class, () -> client.status(StubSparkMaster.SUBMISSION_ID));
+
+            assertThat(exception.getMessage(), containsString("HTTP 404"));
+            assertThat(exception.getMessage(), containsString("(truncated)"));
+            assertThat(exception.getMessage().length(), lessThan(StandaloneRestClient.MAX_BODY_IN_MESSAGE + 200));
+        }
+    }
+
+    @Test
+    void oversizedBodyIsAnUnexpectedResponse() throws Exception {
+        try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url() + "/huge")) {
+            var exception = assertThrows(StandaloneRestClient.UnexpectedResponseException.class, () -> client.status(StubSparkMaster.SUBMISSION_ID));
+
+            assertThat(exception.getMessage(), containsString("larger than"));
         }
     }
 
     @Test
     void statusParsesTheDriverState() throws Exception {
         try (var master = new StubSparkMaster().states("RUNNING"); var client = new StandaloneRestClient(master.url())) {
-            DriverStatus status = client.status(StubSparkMaster.SUBMISSION_ID);
+            var status = client.status(StubSparkMaster.SUBMISSION_ID);
 
             assertThat(status.found(), is(true));
             assertThat(status.state(), is(DriverState.RUNNING));
@@ -79,7 +121,7 @@ class StandaloneRestClientTest {
         try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url())) {
             master.driverFound = false;
 
-            DriverStatus status = client.status(StubSparkMaster.SUBMISSION_ID);
+            var status = client.status(StubSparkMaster.SUBMISSION_ID);
             assertThat(status.found(), is(false));
             assertThat(status.state(), nullValue());
         }
@@ -90,14 +132,6 @@ class StandaloneRestClientTest {
         try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url())) {
             assertThat(client.kill(StubSparkMaster.SUBMISSION_ID), is(true));
             assertThat(master.killRequests, contains(StubSparkMaster.SUBMISSION_ID));
-        }
-    }
-
-    @Test
-    void unexpectedPayloadIsAnIOException() throws Exception {
-        try (var master = new StubSparkMaster(); var client = new StandaloneRestClient(master.url() + "/v1/submissions/broken/x/y")) {
-            // the base URL now points to a path answering HTML instead of a REST protocol message
-            assertThrows(IOException.class, () -> client.status(StubSparkMaster.SUBMISSION_ID));
         }
     }
 }

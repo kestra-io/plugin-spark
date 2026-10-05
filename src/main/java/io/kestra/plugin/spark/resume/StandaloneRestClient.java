@@ -1,6 +1,7 @@
 package io.kestra.plugin.spark.resume;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -9,7 +10,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.apache.spark.launcher.SparkLauncher;
@@ -20,14 +20,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kestra.core.serializers.JacksonMapper;
 
 /**
- * Client for the Spark standalone Master REST API (protocol {@code v1}), the one {@code spark-submit} uses in
- * standalone cluster mode. Requires {@code spark.master.rest.enabled=true} on the Master.
+ * Client for the Spark standalone Master REST API (protocol {@code v1}), the one {@code spark-submit} uses in cluster mode.
  */
 public class StandaloneRestClient implements AutoCloseable {
     private static final ObjectMapper MAPPER = JacksonMapper.ofJson();
     private static final String PROTOCOL_VERSION = "v1";
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+    // Spark answers with small JSON messages, anything bigger comes from another service
+    static final int MAX_BODY_BYTES = 1024 * 1024;
+    static final int MAX_BODY_IN_MESSAGE = 500;
 
     private final URI submissionsUri;
     private final HttpClient httpClient;
@@ -40,14 +42,10 @@ public class StandaloneRestClient implements AutoCloseable {
     }
 
     /**
-     * Submits a driver in cluster mode.
-     *
-     * @return the submission id assigned by the Master
-     * @throws SubmissionRejectedException if the Master answered but refused the submission
-     * @throws IOException if the Master could not be reached or answered with an unexpected payload
+     * Submits a driver in cluster mode and returns its submission id.
      */
     public String create(ClusterSubmission submission) throws IOException, InterruptedException {
-        Map<String, Object> body = new LinkedHashMap<>();
+        var body = new LinkedHashMap<String, Object>();
         body.put("action", "CreateSubmissionRequest");
         body.put("clientSparkVersion", clientSparkVersion());
         body.put("appResource", submission.appResource());
@@ -56,51 +54,45 @@ public class StandaloneRestClient implements AutoCloseable {
         body.put("sparkProperties", submission.sparkProperties());
         body.put("environmentVariables", submission.environmentVariables());
 
-        HttpRequest request = HttpRequest.newBuilder(submissionsUri.resolve("create"))
+        var request = HttpRequest.newBuilder(submissionsUri.resolve("create"))
             .timeout(REQUEST_TIMEOUT)
             .header("Content-Type", "application/json;charset=UTF-8")
             .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(body)))
             .build();
 
-        JsonNode response = send(request, "CreateSubmissionResponse");
-        String submissionId = text(response, "submissionId");
+        var response = send(request, "CreateSubmissionResponse");
+        var submissionId = text(response, "submissionId");
         if (!response.path("success").asBoolean(false) || submissionId == null) {
             throw new SubmissionRejectedException(
-                "The Spark Master rejected the submission: " + Optional.ofNullable(text(response, "message")).orElse("no message")
+                "The Spark Master rejected the submission: " + Optional.ofNullable(text(response, "message")).map(StandaloneRestClient::truncate).orElse("no message")
             );
         }
 
         return submissionId;
     }
 
-    /**
-     * Fetches the current status of a driver.
-     */
     public DriverStatus status(String submissionId) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder(submissionsUri.resolve("status/" + encode(submissionId)))
+        var request = HttpRequest.newBuilder(submissionsUri.resolve("status/" + encode(submissionId)))
             .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
 
-        JsonNode response = send(request, "SubmissionStatusResponse");
-        boolean found = response.path("success").asBoolean(false);
-        String driverState = text(response, "driverState");
+        var response = send(request, "SubmissionStatusResponse");
+        var found = response.path("success").asBoolean(false);
 
         return new DriverStatus(
             found,
-            found ? parseState(driverState) : null,
+            found ? parseState(text(response, "driverState")) : null,
             text(response, "workerHostPort"),
-            text(response, "message")
+            Optional.ofNullable(text(response, "message")).map(StandaloneRestClient::truncate).orElse(null)
         );
     }
 
     /**
-     * Requests the Master to kill a driver.
-     *
-     * @return {@code true} if the Master accepted the kill request
+     * Requests the Master to kill a driver, returning whether the Master accepted the request.
      */
     public boolean kill(String submissionId) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder(submissionsUri.resolve("kill/" + encode(submissionId)))
+        var request = HttpRequest.newBuilder(submissionsUri.resolve("kill/" + encode(submissionId)))
             .timeout(REQUEST_TIMEOUT)
             .POST(HttpRequest.BodyPublishers.noBody())
             .build();
@@ -114,26 +106,44 @@ public class StandaloneRestClient implements AutoCloseable {
     }
 
     private JsonNode send(HttpRequest request, String expectedAction) throws IOException, InterruptedException {
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        var status = response.statusCode();
+
+        byte[] bytes;
+        try (InputStream body = response.body()) {
+            bytes = body.readNBytes(MAX_BODY_BYTES + 1);
+        }
+        var body = new String(bytes, 0, Math.min(bytes.length, MAX_BODY_BYTES), StandardCharsets.UTF_8);
+
+        // a proxy may have forwarded the request before failing, so the outcome stays unknown
+        if (status == 502 || status == 504) {
+            throw new IOException(unexpected(request, status, body));
+        }
+        if (bytes.length > MAX_BODY_BYTES) {
+            throw new UnexpectedResponseException(unexpected(request, status, "response larger than " + MAX_BODY_BYTES + " bytes"));
+        }
 
         JsonNode json;
         try {
-            json = MAPPER.readTree(response.body());
+            json = MAPPER.readTree(body);
         } catch (IOException e) {
-            throw new IOException(
-                "Unexpected response from the Spark Master REST API at " + request.uri() + " (HTTP " + response.statusCode() + "): " + response.body(), e
-            );
+            throw new UnexpectedResponseException(unexpected(request, status, body));
         }
 
-        String action = text(json, "action");
-        if (!expectedAction.equals(action)) {
-            throw new IOException(
-                "Unexpected response from the Spark Master REST API at " + request.uri() + " (HTTP " + response.statusCode() + "): " +
-                    Optional.ofNullable(text(json, "message")).orElse(response.body())
-            );
+        if (json == null || !expectedAction.equals(text(json, "action"))) {
+            var message = json == null ? null : text(json, "message");
+            throw new UnexpectedResponseException(unexpected(request, status, message != null ? message : body));
         }
 
         return json;
+    }
+
+    private static String unexpected(HttpRequest request, int status, String detail) {
+        return "Unexpected response from the Spark Master REST API at " + request.uri() + " (HTTP " + status + "): " + truncate(detail);
+    }
+
+    static String truncate(String value) {
+        return value.length() <= MAX_BODY_IN_MESSAGE ? value : value.substring(0, MAX_BODY_IN_MESSAGE) + "... (truncated)";
     }
 
     private static DriverState parseState(String driverState) {
@@ -150,7 +160,7 @@ public class StandaloneRestClient implements AutoCloseable {
     }
 
     private static String text(JsonNode json, String field) {
-        JsonNode node = json.get(field);
+        var node = json.get(field);
         return node == null || node.isNull() ? null : node.asText();
     }
 
@@ -171,6 +181,15 @@ public class StandaloneRestClient implements AutoCloseable {
      */
     public static class SubmissionRejectedException extends IOException {
         public SubmissionRejectedException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * A server answered with something that is not a valid REST API message, so it did not create a driver.
+     */
+    public static class UnexpectedResponseException extends IOException {
+        public UnexpectedResponseException(String message) {
             super(message);
         }
     }

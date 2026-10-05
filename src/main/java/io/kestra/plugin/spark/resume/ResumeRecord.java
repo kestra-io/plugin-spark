@@ -4,15 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Handle of the driver submitted by a task run, so a resubmitted attempt can re-attach to it.
- *
- * @param status {@link Status#PENDING} while the submission request is in flight, {@link Status#SUBMITTED} once
- *        the Master returned a submission id
- * @param submissionId the driver submission id, {@code null} while {@link Status#PENDING}
- * @param restUrl the Master REST endpoint the driver was submitted to
- * @param updatedAt when the record was last written
- */
+// PENDING while the create request is in flight, so an interrupted submission is never retried blindly
 public record ResumeRecord(Status status, String submissionId, String restUrl, Instant updatedAt) {
     public enum Status {
         PENDING,
@@ -28,7 +20,7 @@ public record ResumeRecord(Status status, String submissionId, String restUrl, I
     }
 
     Map<String, Object> toMap() {
-        Map<String, Object> map = new LinkedHashMap<>();
+        var map = new LinkedHashMap<String, Object>();
         map.put("status", status.name());
         map.put("submissionId", submissionId);
         map.put("restUrl", restUrl);
@@ -37,9 +29,9 @@ public record ResumeRecord(Status status, String submissionId, String restUrl, I
     }
 
     static ResumeRecord fromMap(Map<?, ?> map) {
-        Object submissionId = map.get("submissionId");
-        Object restUrl = map.get("restUrl");
-        Object updatedAt = map.get("updatedAt");
+        var submissionId = map.get("submissionId");
+        var restUrl = map.get("restUrl");
+        var updatedAt = map.get("updatedAt");
 
         return new ResumeRecord(
             Status.valueOf(String.valueOf(map.get("status"))),

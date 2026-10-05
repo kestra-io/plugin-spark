@@ -50,7 +50,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
 
 import static io.kestra.core.utils.Rethrow.*;
 
@@ -59,13 +58,13 @@ import static io.kestra.core.utils.Rethrow.*;
 @EqualsAndHashCode
 @Getter
 @NoArgsConstructor
-@Slf4j
 public abstract class AbstractSubmit extends Task implements RunnableTask<ScriptOutput> {
     private static final String DEFAULT_IMAGE = "apache/spark:4.0.1-java21-r";
     private static final String SPARK_MASTER_PREFIX = "spark://";
     private static final int DEFAULT_REST_PORT = 6066;
     // How long the Master REST API may stay unreachable while polling
     private static final Duration STATUS_ERROR_TOLERANCE = Duration.ofMinutes(5);
+    private static final Duration MIN_POLL_INTERVAL = Duration.ofSeconds(1);
 
     @Schema(
         title = "Set Spark master endpoint",
@@ -183,7 +182,11 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             stays in the Spark worker logs.
 
             Killing the execution, or reaching the task `timeout`, kills the driver. Resuming prevents a duplicate \
-            submission, not duplicate writes made by the application itself: keep writes idempotent."""
+            submission, not duplicate writes made by the application itself: keep writes idempotent.
+
+            The submission, including `env` and `configurations`, is sent to `restUrl` as is: over plain `http://` \
+            anyone on the network path can read secrets such as storage keys. Use an `https://` endpoint (for example \
+            a TLS proxy in front of the Master) or secure the REST API with `spark.master.rest.filters`."""
     )
     @Builder.Default
     @PluginProperty(group = "execution")
@@ -193,14 +196,16 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         title = "Spark Master REST API endpoint",
         description = """
             Used when `resume` is true. Defaults to `http://<master host>:6066`, derived from `master`. Set it \
-            explicitly when the REST API listens on another port or host, or when `master` lists several masters."""
+            explicitly when the REST API listens on another port or host, or when `master` lists several masters. \
+            The submission, including `env` and `configurations`, travels in clear text over `http://`: prefer an \
+            `https://` endpoint when it carries secrets."""
     )
     @PluginProperty(group = "execution")
     private Property<String> restUrl;
 
     @Schema(
         title = "Interval between two driver status checks",
-        description = "Used when `resume` is true. Defaults to 5 seconds."
+        description = "Used when `resume` is true. Minimum 1 second, defaults to 5 seconds."
     )
     @Builder.Default
     @PluginProperty(group = "execution")
@@ -225,11 +230,15 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     @EqualsAndHashCode.Exclude
     private volatile String currentRestUrl;
 
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private transient volatile Logger runLogger;
+
     abstract protected void configure(RunContext runContext, SparkLauncher spark) throws Exception;
 
-    /**
-     * Builds the driver submission used when {@code resume} is enabled. Only JVM applications support it.
-     */
+    // Only JVM applications can run in standalone cluster mode, so the other tasks keep this default
     protected ClusterSubmission clusterSubmission(RunContext runContext) throws Exception {
         throw new IllegalArgumentException(
             "`resume` is only supported by `JarSubmit`: Spark standalone clusters do not support the cluster deploy mode for Python and R applications."
@@ -300,15 +309,13 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             .run();
     }
 
-    /**
-     * Submits the driver, or re-attaches to the one submitted by a previous attempt, then waits for its outcome.
-     * The resume record is only deleted once that outcome is known, so a driver is never submitted twice blindly.
-     */
+    // The resume record is only deleted once the driver outcome is known, so a driver is never submitted twice blindly
     private ScriptOutput runResumable(RunContext runContext) throws Exception {
-        Logger logger = runContext.logger();
+        var logger = runContext.logger();
+        this.runLogger = logger;
 
-        String rMaster = runContext.render(this.master).as(String.class).orElseThrow();
-        DeployMode rDeployMode = runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT);
+        var rMaster = runContext.render(this.master).as(String.class).filter(value -> !value.isBlank()).orElseThrow(() -> renderedEmpty("master"));
+        var rDeployMode = runContext.render(this.deployMode).as(DeployMode.class).orElse(DeployMode.CLIENT);
         if (rDeployMode != DeployMode.CLUSTER) {
             throw new IllegalArgumentException(
                 "`resume` requires `deployMode: CLUSTER`: in client mode the driver runs inside the task and stops with it, so there is nothing to resume."
@@ -320,21 +327,24 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             );
         }
 
-        String rRestUrl = runContext.render(this.restUrl).as(String.class).orElseGet(() -> defaultRestUrl(rMaster));
-        Duration rPollInterval = runContext.render(this.pollInterval).as(Duration.class).orElse(Duration.ofSeconds(5));
-        // validated before any state is written
-        ClusterSubmission submission = this.clusterSubmission(runContext);
+        var rPollInterval = runContext.render(this.pollInterval).as(Duration.class).orElse(Duration.ofSeconds(5));
+        if (rPollInterval.compareTo(MIN_POLL_INTERVAL) < 0) {
+            throw new IllegalArgumentException("`pollInterval` must be at least " + MIN_POLL_INTERVAL + ", got " + rPollInterval + ".");
+        }
 
-        ResumeStateStore store = new ResumeStateStore(runContext);
-        Optional<ResumeRecord> previous = store.get();
-        String namespace = runContext.flowInfo().namespace();
+        var rRestUrl = runContext.render(this.restUrl).as(String.class).orElseGet(() -> defaultRestUrl(rMaster));
+        // validated before any state is written
+        var submission = this.clusterSubmission(runContext);
+
+        var store = new ResumeStateStore(runContext);
+        var previous = store.get();
+        var namespace = runContext.flowInfo().namespace();
+        var resumed = previous.isPresent();
 
         String submissionId;
         String driverRestUrl;
-        boolean resumed = previous.isPresent();
-
         if (previous.isPresent()) {
-            ResumeRecord record = previous.get();
+            var record = previous.get();
             if (record.status() == ResumeRecord.Status.PENDING) {
                 throw new IllegalStateException(
                     "A previous attempt of this task run was interrupted while submitting the driver to " + record.restUrl() +
@@ -349,16 +359,16 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             logger.info("Re-attaching to Spark driver '{}' submitted to {} by a previous attempt of this task run", submissionId, driverRestUrl);
         } else {
             driverRestUrl = rRestUrl;
-            store.put(ResumeRecord.pending(driverRestUrl));
-
-            try (StandaloneRestClient client = new StandaloneRestClient(driverRestUrl)) {
-                submissionId = client.create(submission);
-            } catch (StandaloneRestClient.SubmissionRejectedException | ConnectException | HttpConnectTimeoutException e) {
-                // no driver was created, so a retry can submit again
-                store.delete();
-                throw e;
+            var rConfigurations = runContext.render(this.configurations).asMap(String.class, String.class);
+            if (driverRestUrl.startsWith("http://") && (!submission.environmentVariables().isEmpty() || !rConfigurations.isEmpty())) {
+                logger.warn(
+                    "`env` and `configurations` are sent in clear text to {}: use an https:// endpoint or secure the REST API if they contain secrets",
+                    driverRestUrl
+                );
             }
 
+            store.put(ResumeRecord.pending(driverRestUrl));
+            submissionId = this.submit(store, driverRestUrl, submission);
             store.put(ResumeRecord.submitted(submissionId, driverRestUrl));
             logger.info("Submitted Spark driver '{}' to {}", submissionId, driverRestUrl);
         }
@@ -367,11 +377,11 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         this.currentSubmissionId.set(submissionId);
         if (this.killed.get()) {
             // kill() ran before the submission id was known
-            killDriver(driverRestUrl, submissionId);
+            this.killDriver(driverRestUrl, submissionId);
         }
 
         DriverStatus status;
-        try (StandaloneRestClient client = new StandaloneRestClient(driverRestUrl)) {
+        try (var client = new StandaloneRestClient(driverRestUrl)) {
             status = this.waitForDriver(logger, client, submissionId, rPollInterval, store, namespace);
         } catch (InterruptedException e) {
             if (this.killed.get()) {
@@ -406,6 +416,25 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
             .build();
     }
 
+    private String submit(ResumeStateStore store, String driverRestUrl, ClusterSubmission submission) throws Exception {
+        try (var client = new StandaloneRestClient(driverRestUrl)) {
+            return client.create(submission);
+        } catch (
+            StandaloneRestClient.SubmissionRejectedException | StandaloneRestClient.UnexpectedResponseException | ConnectException
+            | HttpConnectTimeoutException e
+        ) {
+            // the request never reached a Master, or was answered without creating a driver
+            store.delete();
+            throw e;
+        } catch (InterruptedException e) {
+            // a kill ends the task run, while a worker shutdown keeps the record for the resubmitted attempt
+            if (this.killed.get()) {
+                store.delete();
+            }
+            throw e;
+        }
+    }
+
     private DriverStatus waitForDriver(Logger logger, StandaloneRestClient client, String submissionId, Duration pollInterval, ResumeStateStore store,
         String namespace) throws IOException, InterruptedException {
         DriverState lastState = null;
@@ -417,7 +446,7 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
                 status = client.status(submissionId);
                 unreachableSince = null;
             } catch (IOException e) {
-                Instant now = Instant.now();
+                var now = Instant.now();
                 if (unreachableSince == null) {
                     unreachableSince = now;
                 }
@@ -460,63 +489,59 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         }
     }
 
-    /**
-     * Kills the driver on execution kill or task timeout. A worker shutdown does not call it, so the driver keeps running.
-     */
+    // Called on execution kill or task timeout, but not on worker shutdown, so the driver survives a restart
     @Override
     public void kill() {
         if (!this.killed.compareAndSet(false, true)) {
             return;
         }
 
-        String submissionId = this.currentSubmissionId.get();
-        String driverRestUrl = this.currentRestUrl;
+        var submissionId = this.currentSubmissionId.get();
+        var driverRestUrl = this.currentRestUrl;
         if (submissionId != null && driverRestUrl != null) {
-            killDriver(driverRestUrl, submissionId);
+            this.killDriver(driverRestUrl, submissionId);
         }
     }
 
-    private static void killDriver(String driverRestUrl, String submissionId) {
-        try (StandaloneRestClient client = new StandaloneRestClient(driverRestUrl)) {
+    private void killDriver(String driverRestUrl, String submissionId) {
+        var logger = this.runLogger;
+        try (var client = new StandaloneRestClient(driverRestUrl)) {
             if (client.kill(submissionId)) {
-                log.info("Spark driver '{}' killed", submissionId);
+                logger.info("Spark driver '{}' killed", submissionId);
             } else {
-                log.warn("The Spark Master refused to kill driver '{}'", submissionId);
+                logger.warn("The Spark Master refused to kill driver '{}'", submissionId);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Interrupted while killing Spark driver '{}'", submissionId);
+            logger.warn("Interrupted while killing Spark driver '{}'", submissionId);
         } catch (Exception e) {
-            log.warn("Unable to kill Spark driver '{}': {}", submissionId, e.getMessage());
+            logger.warn("Unable to kill Spark driver '{}': {}", submissionId, e.getMessage());
         }
     }
 
-    /**
-     * Builds a submission like {@code spark-submit} does in standalone cluster mode. {@code spark.master} is left to
-     * the Master unless set in {@code configurations}, so the driver uses the address the Master advertises.
-     */
+    // spark.master is left to the Master unless set in configurations, so the driver uses the address the Master advertises
     protected ClusterSubmission buildClusterSubmission(RunContext runContext, String appResource, String mainClass, List<String> jars) throws Exception {
         requireClusterVisible(appResource, "mainResource");
         jars.forEach(jar -> requireClusterVisible(jar, "jars"));
 
-        Map<String, String> sparkProperties = new LinkedHashMap<>(runContext.render(this.configurations).asMap(String.class, String.class));
+        var sparkProperties = new LinkedHashMap<>(runContext.render(this.configurations).asMap(String.class, String.class));
 
         if (this.name != null) {
-            sparkProperties.put("spark.app.name", runContext.render(this.name).as(String.class).orElseThrow());
+            sparkProperties.put("spark.app.name", runContext.render(this.name).as(String.class).orElseThrow(() -> renderedEmpty("name")));
         }
         sparkProperties.putIfAbsent("spark.app.name", mainClass);
         sparkProperties.put("spark.submit.deployMode", DeployMode.CLUSTER.value());
 
-        List<String> allJars = new ArrayList<>();
+        var allJars = new ArrayList<String>();
         Optional.ofNullable(sparkProperties.get("spark.jars")).filter(value -> !value.isBlank()).ifPresent(allJars::add);
         allJars.addAll(jars);
         allJars.add(appResource);
         sparkProperties.put("spark.jars", String.join(",", allJars));
 
-        List<String> files = new ArrayList<>(runContext.render(this.appFiles).asMap(String.class, String.class).values());
+        var files = new ArrayList<>(runContext.render(this.appFiles).asMap(String.class, String.class).values());
         files.forEach(file -> requireClusterVisible(file, "appFiles"));
         if (!files.isEmpty()) {
-            Optional.ofNullable(sparkProperties.get("spark.files")).filter(value -> !value.isBlank()).ifPresent(value -> files.addFirst(value));
+            Optional.ofNullable(sparkProperties.get("spark.files")).filter(value -> !value.isBlank()).ifPresent(files::addFirst);
             sparkProperties.put("spark.files", String.join(",", files));
         }
 
@@ -529,6 +554,10 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
         );
     }
 
+    protected static IllegalArgumentException renderedEmpty(String property) {
+        return new IllegalArgumentException("`" + property + "` rendered to an empty value.");
+    }
+
     private static void requireClusterVisible(String uri, String property) {
         if (uri.startsWith("kestra://")) {
             throw new IllegalArgumentException(
@@ -539,14 +568,14 @@ public abstract class AbstractSubmit extends Task implements RunnableTask<Script
     }
 
     private static String defaultRestUrl(String master) {
-        String hostPort = master.substring(SPARK_MASTER_PREFIX.length());
+        var hostPort = master.substring(SPARK_MASTER_PREFIX.length());
         if (hostPort.contains(",")) {
             throw new IllegalArgumentException(
                 "`master` lists several masters, set `restUrl` to the REST API endpoint of the active one, got '" + master + "'."
             );
         }
 
-        String host = URI.create("http://" + hostPort).getHost();
+        var host = URI.create("http://" + hostPort).getHost();
         if (host == null) {
             throw new IllegalArgumentException("Unable to derive `restUrl` from `master` '" + master + "', set `restUrl` explicitly.");
         }

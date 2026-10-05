@@ -12,12 +12,9 @@ import io.kestra.core.storages.kv.KVStore;
 import io.kestra.core.storages.kv.KVValue;
 import io.kestra.core.storages.kv.KVValueAndMetadata;
 
-/**
- * Stores the {@link ResumeRecord} of a task run in the namespace KV store. The key deliberately ignores the attempt
- * number, because an attempt resubmitted after a worker restart gets a new one.
- */
+// The key ignores the attempt number, because an attempt resubmitted after a worker restart gets a new one
 public class ResumeStateStore {
-    /** Safety net for records left behind by abandoned executions. */
+    // safety net for records left behind by abandoned executions
     static final Duration TTL = Duration.ofDays(7);
 
     private static final String KEY_PREFIX = "spark-resume_";
@@ -58,9 +55,9 @@ public class ResumeStateStore {
 
     @SuppressWarnings("unchecked")
     static String key(RunContext runContext) {
-        Map<String, Object> variables = runContext.getVariables();
-        String executionId = String.valueOf(((Map<String, Object>) variables.get("execution")).get("id"));
-        String taskRunId = String.valueOf(((Map<String, Object>) variables.get("taskrun")).get("id"));
+        var variables = runContext.getVariables();
+        var executionId = String.valueOf(((Map<String, Object>) variables.get("execution")).get("id"));
+        var taskRunId = String.valueOf(((Map<String, Object>) variables.get("taskrun")).get("id"));
 
         return KEY_PREFIX + executionId + "_" + taskRunId;
     }
