@@ -27,7 +27,14 @@ import io.kestra.core.models.annotations.PluginProperty;
 @NoArgsConstructor
 @Schema(
     title = "Submit SparkR job to Spark",
-    description = "Writes the provided R script to a temp file and runs it with spark-submit on the configured Spark master."
+    description = """
+        Writes the provided R script to a temp file and runs it with spark-submit on the configured Spark master.
+
+        You don't need to set `SPARK_HOME` when you use the default container image `apache/spark:4.0.1-java21-r`: \
+        the image already sets `SPARK_HOME=/opt/spark` and ships SparkR under `/opt/spark/R/lib`, so the script can \
+        load it with `file.path(Sys.getenv("SPARK_HOME"), "R", "lib")`. If you use your own image with `containerImage`, \
+        make sure it has R installed and either sets `SPARK_HOME` itself or pass it through `env`, for example \
+        `SPARK_HOME: /opt/spark`, pointing to the folder that contains `bin/spark-submit`."""
 )
 @Plugin(
     examples = {
@@ -44,6 +51,9 @@ import io.kestra.core.models.annotations.PluginProperty;
                       type: io.kestra.plugin.scripts.runner.docker.Docker
                       networkMode: host
                       user: root
+                    # The default image apache/spark:4.0.1-java21-r already sets SPARK_HOME=/opt/spark,
+                    # so there is no need to set it here.
+                    containerImage: apache/spark:4.0.1-java21-r
                     master: spark://localhost:7077
                     mainScript: |
                       library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
