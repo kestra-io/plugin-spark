@@ -9,7 +9,7 @@ import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
-import io.kestra.core.models.tasks.runners.AbstractLogConsumer;
+import io.kestra.core.models.tasks.runners.DefaultLogConsumer;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.scripts.exec.AbstractExecScript;
 import io.kestra.plugin.scripts.exec.scripts.models.ScriptOutput;
@@ -102,15 +102,12 @@ public class SparkCLI extends AbstractExecScript implements RunnableTask<ScriptO
 
         return this.commands(runContext)
             // spark set all logs in stdErr so we force all logs on info
-            .withLogConsumer(new AbstractLogConsumer() {
+            .withLogConsumer(new DefaultLogConsumer(runContext) {
+                // spark sets all logs in stdErr so we force all logs on info, while keeping the
+                // default parsing of `::{...}::` markers (outputs, metrics, checkpoints)
                 @Override
                 public void accept(String line, Boolean isStdErr, Instant instant) {
-                    runContext.logger().info(line);
-                }
-
-                @Override
-                public void accept(String line, Boolean aBoolean) {
-                    runContext.logger().info(line);
+                    super.accept(line, false, instant);
                 }
             })
             .withInterpreter(this.interpreter)

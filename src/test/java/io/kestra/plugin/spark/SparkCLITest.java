@@ -36,4 +36,18 @@ class SparkCLITest {
         assertThat(output.getExitCode(), is(0));
     }
 
+    @Test
+    void shouldParseOutputMarkersFromLogs() throws Exception {
+        var spark = SparkCLI.builder()
+            .id("spark-cli")
+            .type(SparkCLI.class.getName())
+            .commands(Property.ofValue(List.of("echo '::{\"outputs\":{\"key\":\"value\"}}::'")))
+            .build();
+        var runContext = TestsUtils.mockRunContext(runContextFactory, spark, ImmutableMap.of());
+
+        var output = spark.run(runContext);
+
+        assertThat(output.getExitCode(), is(0));
+        assertThat(output.getVars().get("key"), is("value"));
+    }
 }
